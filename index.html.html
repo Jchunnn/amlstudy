@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AML Daily · CAMS 學習系統</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="DailyAML">
+<meta name="theme-color" content="#1a1814">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=Newsreader:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#f7f5f0;--surface:#fff;--surface2:#f0ede6;--border:#e2ddd6;--border2:#ccc8bf;
+  --ink:#1a1814;--ink2:#4a4540;--ink3:#8a857e;
+  --accent:#c8410a;--accent-light:#fdf0eb;
+  --gold:#b8860b;--gold-light:#fdf8e8;
+  --blue:#1a3c6e;--blue-light:#ebf0f8;
+  --red:#c0392b;--red-light:#fdecea;
+  --green:#1a6b3a;--green-light:#e8f5ee;
+  --purple:#5a3d9e;--purple-light:#f0ebff;
+  --mono:'JetBrains Mono',monospace;
+  --serif:'Newsreader',Georgia,serif;
+  --sans:'Syne',sans-serif;
+  --shadow:0 1px 3px rgba(0,0,0,.08),0 4px 16px rgba(0,0,0,.04);
+  --shadow-h:0 2px 8px rgba(0,0,0,.12),0 8px 24px rgba(0,0,0,.06);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:100vh;line-height:1.6}
+
+/* ── LAYOUT ── */
+.app-shell{display:flex;min-height:100vh}
+.sidebar{width:220px;flex-shrink:0;background:var(--ink);color:#fff;display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;overflow-y:auto}
+.sidebar-logo{padding:28px 20px 20px;border-bottom:1px solid rgba(255,255,255,.08)}
+.logo-mark{font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:rgba(255,255,255,.4);text-transform:uppercase;margin-bottom:6px}
+.logo-name{font-size:18px;font-weight:700;color:#fff;line-height:1.2}
+.logo-name span{color:var(--accent)}
+.sidebar-nav{flex:1;padding:16px 0}
+.nav-section-title{font-family:var(--mono);font-size:9px;letter-spacing:.2em;color:rgba(255,255,255,.3);text-transform:uppercase;padding:12px 20px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 20px;font-size:13px;font-weight:500;color:rgba(255,255,255,.6);cursor:pointer;transition:all .15s;border-left:2px solid transparent}
+.nav-item:hover{color:#fff;background:rgba(255,255,255,.05)}
+.nav-item.active{color:#fff;border-left-color:var(--accent);background:rgba(255,255,255,.07)}
+.nav-icon{font-size:15px;width:18px;text-align:center}
+.sidebar-footer{padding:16px 20px;border-top:1px solid rgba(255,255,255,.08)}
+.day-counter{font-family:var(--mono);font-size:10px;color:rgba(255,255,255,.4);margin-bottom:4px}
+.streak-bar{display:flex;gap:3px}
+.streak-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.15)}
+.streak-dot.done{background:var(--accent)}
+
+.main{margin-left:220px;flex:1;padding:36px 40px;max-width:calc(100% - 220px)}
+.page{display:none;animation:fadeUp .3s ease}
+.page.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── HEADER ── */
+.page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:32px;gap:16px;flex-wrap:wrap}
+.page-eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--ink3);text-transform:uppercase;margin-bottom:4px}
+.page-title{font-family:var(--serif);font-size:28px;font-weight:500;color:var(--ink);line-height:1.2}
+.page-title em{font-style:italic;color:var(--accent)}
+.date-badge{font-family:var(--mono);font-size:11px;color:var(--ink3);background:var(--surface);border:1px solid var(--border);padding:6px 14px;border-radius:20px;white-space:nowrap}
+
+/* ── CARDS ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;box-shadow:var(--shadow);margin-bottom:20px}
+.card-header{display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.card-icon{width:32px;height:32px;background:var(--accent-light);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.card-title{font-size:14px;font-weight:600;color:var(--ink)}
+.card-subtitle{font-size:12px;color:var(--ink3);font-family:var(--mono)}
+
+/* ── CONCEPTS ── */
+.concept-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:20px}
+.concept-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--shadow);transition:box-shadow .2s,transform .2s}
+.concept-card:hover{box-shadow:var(--shadow-h);transform:translateY(-1px)}
+.concept-color-bar{height:4px}
+.concept-body{padding:20px}
+.concept-en-term{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.08em;margin-bottom:6px}
+.concept-name{font-size:17px;font-weight:600;color:var(--ink);margin-bottom:10px}
+.concept-desc{font-size:13px;color:var(--ink2);line-height:1.7;margin-bottom:14px}
+.concept-section-title{font-family:var(--mono);font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--ink3);margin-bottom:6px;margin-top:12px}
+.concept-keywords{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px}
+.kw-chip{font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:4px;background:var(--surface2);border:1px solid var(--border);color:var(--ink2)}
+.concept-example{font-size:12px;line-height:1.65;color:var(--ink2);background:var(--surface2);border-radius:8px;padding:10px 12px;border-left:3px solid var(--border2)}
+.concept-example .ex-type{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin-bottom:3px}
+
+/* ── NEWS ── */
+.news-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--shadow);margin-bottom:16px}
+.news-header{padding:16px 20px 14px;border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:flex-start}
+.news-tag{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;padding:3px 9px;border-radius:4px;white-space:nowrap;margin-top:2px}
+.tag-crypto{background:var(--blue-light);color:var(--blue)}
+.tag-sanc{background:var(--red-light);color:var(--red)}
+.tag-reg{background:var(--gold-light);color:var(--gold)}
+.tag-aml{background:var(--accent-light);color:var(--accent)}
+.news-title{font-size:15px;font-weight:600;color:var(--ink);line-height:1.4}
+.news-date{font-family:var(--mono);font-size:10px;color:var(--ink3);margin-top:3px}
+.news-body{padding:16px 20px}
+.news-section{margin-bottom:12px}
+.news-section-label{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink3);margin-bottom:5px}
+.news-section p{font-size:13px;color:var(--ink2);line-height:1.7}
+.analyst-steps{list-style:none;padding:0}
+.analyst-steps li{font-size:13px;color:var(--ink2);line-height:1.65;padding:4px 0 4px 20px;position:relative}
+.analyst-steps li::before{content:attr(data-n);position:absolute;left:0;font-family:var(--mono);font-size:10px;color:var(--accent);font-weight:600}
+
+/* ── QUIZ STATS & PROGRESS ── */
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:24px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;text-align:center}
+.stat-num{font-family:var(--serif);font-size:28px;font-weight:500;color:var(--ink)}
+.stat-label{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin-top:3px}
+.quiz-progress-bar{height:3px;background:var(--border);border-radius:3px;overflow:hidden;margin-bottom:28px}
+.quiz-progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--green));border-radius:3px;transition:width .4s ease}
+
+/* ── RESULT BANNER ── */
+.result-banner{display:none;background:var(--ink);color:#fff;border-radius:12px;padding:28px 32px;text-align:center;margin-bottom:24px;animation:fadeUp .3s ease}
+.result-score-big{font-family:var(--serif);font-size:56px;font-weight:400;line-height:1;color:#fff}
+.result-score-big span{font-size:28px;color:rgba(255,255,255,.5)}
+.result-detail{display:flex;justify-content:center;gap:24px;margin-top:12px;flex-wrap:wrap}
+.result-detail-item{font-family:var(--mono);font-size:11px;color:rgba(255,255,255,.6)}
+.result-detail-item strong{color:#fff}
+.result-grade-badge{display:inline-block;font-family:var(--mono);font-size:11px;padding:4px 14px;border-radius:20px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.8);margin-top:8px}
+
+/* ── MCQ CARD ── */
+.q-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:16px;overflow:hidden;box-shadow:var(--shadow);transition:border-color .3s}
+.q-card.answered-correct{border-color:rgba(26,107,58,.4)}
+.q-card.answered-wrong{border-color:rgba(192,57,43,.4)}
+.q-top{padding:18px 22px 14px;display:flex;gap:14px;align-items:flex-start;border-bottom:1px solid var(--border)}
+.q-num{flex-shrink:0;font-family:var(--mono);font-size:11px;font-weight:500;width:28px;height:28px;display:flex;align-items:center;justify-content:center;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--ink3);margin-top:2px}
+.q-num.correct{background:var(--green-light);border-color:rgba(26,107,58,.3);color:var(--green)}
+.q-num.wrong{background:var(--red-light);border-color:rgba(192,57,43,.3);color:var(--red)}
+.q-meta{flex:1}
+.q-topic-tag{display:inline-block;font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;padding:2px 8px;border-radius:4px;margin-bottom:7px}
+.q-type-tag{display:inline-block;font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;padding:2px 8px;border-radius:4px;margin-bottom:7px;margin-left:5px}
+.q-scenario-tag{background:var(--gold-light);color:var(--gold)}
+.q-fill-tag{background:var(--purple-light);color:var(--purple)}
+.q-en{font-size:14px;color:var(--ink);line-height:1.65;margin-bottom:6px}
+.q-zh{font-size:12px;color:var(--ink3);line-height:1.6}
+.q-options{padding:12px 22px 16px;display:flex;flex-direction:column;gap:7px}
+.opt-wrap{}
+.opt-wrap input[type="radio"]{display:none}
+.opt-label{display:flex;align-items:flex-start;gap:10px;padding:10px 13px;border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:all .15s}
+.opt-label:hover{border-color:var(--border2);background:var(--surface2)}
+input[type="radio"]:checked+.opt-label{border-color:rgba(200,65,10,.4);background:var(--accent-light)}
+.opt-key{flex-shrink:0;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:10px;font-weight:500;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--ink3);margin-top:1px}
+input[type="radio"]:checked+.opt-label .opt-key{background:var(--accent-light);border-color:var(--accent);color:var(--accent)}
+.opt-text{font-size:13px;color:var(--ink2);line-height:1.55}
+input[type="radio"]:checked+.opt-label .opt-text{color:var(--ink)}
+.opt-wrap.show-correct .opt-label{border-color:rgba(26,107,58,.5)!important;background:var(--green-light)!important;pointer-events:none}
+.opt-wrap.show-correct .opt-key{background:rgba(26,107,58,.15)!important;border-color:var(--green)!important;color:var(--green)!important}
+.opt-wrap.show-correct .opt-text{color:var(--green)!important}
+.opt-wrap.show-wrong .opt-label{border-color:rgba(192,57,43,.5)!important;background:var(--red-light)!important;pointer-events:none}
+.opt-wrap.show-wrong .opt-key{background:rgba(192,57,43,.15)!important;border-color:var(--red)!important;color:var(--red)!important}
+.opt-wrap.show-wrong .opt-text{color:var(--red)!important}
+
+/* ── FILL-IN-THE-BLANK ── */
+.q-fill-area{padding:14px 22px 18px}
+.fill-stem{font-size:14px;color:var(--ink);line-height:1.9;margin-bottom:6px}
+.fill-stem-zh{font-size:12px;color:var(--ink3);line-height:1.7;margin-bottom:14px}
+.blank-group{display:flex;flex-direction:column;gap:8px}
+.blank-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.blank-label{font-family:var(--mono);font-size:10px;color:var(--ink3);white-space:nowrap;min-width:40px}
+.blank-hint{font-family:var(--mono);font-size:10px;color:var(--purple);background:var(--purple-light);border:1px solid rgba(90,61,158,.15);border-radius:4px;padding:2px 7px;white-space:nowrap}
+.blank-input{flex:1;min-width:160px;max-width:400px;font-family:var(--mono);font-size:13px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--ink);outline:none;transition:border-color .15s}
+.blank-input:focus{border-color:var(--purple);background:var(--surface)}
+.blank-input.fill-correct{border-color:var(--green)!important;background:var(--green-light)!important;color:var(--green)!important}
+.blank-input.fill-wrong{border-color:var(--red)!important;background:var(--red-light)!important;color:var(--red)!important}
+.blank-input.fill-partial{border-color:var(--gold)!important;background:var(--gold-light)!important;color:var(--gold)!important}
+.blank-input:disabled{cursor:not-allowed}
+.fill-result-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;align-items:center}
+.fill-badge{font-family:var(--mono);font-size:10px;padding:2px 9px;border-radius:4px;font-weight:500}
+.fb-correct{background:var(--green-light);color:var(--green)}
+.fb-wrong{background:var(--red-light);color:var(--red)}
+.fb-partial{background:var(--gold-light);color:var(--gold)}
+.fb-answer{background:var(--surface2);color:var(--ink2);border:1px solid var(--border)}
+.error-type-badge{font-family:var(--mono);font-size:9px;padding:2px 7px;border-radius:4px;background:rgba(90,61,158,.1);color:var(--purple)}
+
+/* ── EXPLANATION ── */
+.q-explanation{display:none;margin:0 22px 16px;padding:13px 15px;border-radius:8px;font-size:12.5px;line-height:1.75;color:var(--ink2);border-left:3px solid var(--border2);background:var(--surface2)}
+.q-explanation.show{display:block;animation:fadeUp .2s ease}
+.q-explanation.correct-exp{border-left-color:var(--green);background:var(--green-light)}
+.q-explanation.wrong-exp{border-left-color:var(--red);background:var(--red-light)}
+.q-explanation.partial-exp{border-left-color:var(--gold);background:var(--gold-light)}
+.exp-head{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin-bottom:6px}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:10px 22px;border-radius:8px;border:none;font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;transition:all .18s}
+.btn-primary{background:var(--ink);color:#fff}
+.btn-primary:hover{background:#2d2a24;transform:translateY(-1px)}
+.btn-secondary{background:var(--surface);color:var(--ink2);border:1px solid var(--border)}
+.btn-secondary:hover{background:var(--surface2)}
+.btn-danger{background:var(--red-light);color:var(--red);border:1px solid rgba(192,57,43,.2)}
+.btn-danger:hover{background:rgba(192,57,43,.15)}
+.action-row{display:flex;gap:10px;flex-wrap:wrap;padding:20px 0;justify-content:center}
+.warn-text{text-align:center;font-family:var(--mono);font-size:11px;color:var(--gold);padding:6px 0;display:none}
+
+/* ── ERROR BOOK ── */
+.error-tabs{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+.etab{font-family:var(--mono);font-size:11px;padding:5px 14px;border-radius:20px;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--ink3);transition:all .15s}
+.etab.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+.error-item{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px 18px;margin-bottom:12px;box-shadow:var(--shadow)}
+.error-item.mcq-err{border-left:3px solid var(--red)}
+.error-item.fill-err{border-left:3px solid var(--purple)}
+.error-date{font-family:var(--mono);font-size:10px;color:var(--ink3);margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.error-q{font-size:13px;color:var(--ink);line-height:1.6;margin-bottom:8px}
+.error-ans-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.ans-chip{font-family:var(--mono);font-size:11px;padding:3px 10px;border-radius:5px}
+.ans-wrong{background:var(--red-light);color:var(--red)}
+.ans-correct{background:var(--green-light);color:var(--green)}
+.ans-partial{background:var(--gold-light);color:var(--gold)}
+.error-exp{font-size:12px;color:var(--ink2);line-height:1.7;background:var(--surface2);border-radius:6px;padding:10px 12px}
+.empty-state{text-align:center;padding:48px 24px;color:var(--ink3)}
+.empty-icon{font-size:36px;margin-bottom:12px}
+.empty-text{font-size:14px}
+
+/* ── HISTORY ── */
+.history-table{width:100%;border-collapse:collapse}
+.history-table th{text-align:left;padding:10px 14px;font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);border-bottom:1px solid var(--border)}
+.history-table td{padding:11px 14px;font-size:13px;border-bottom:1px solid var(--border)}
+.history-table tr:last-child td{border-bottom:none}
+.score-pill{display:inline-block;font-family:var(--mono);font-size:11px;padding:2px 10px;border-radius:10px}
+.score-high{background:var(--green-light);color:var(--green)}
+.score-mid{background:var(--gold-light);color:var(--gold)}
+.score-low{background:var(--red-light);color:var(--red)}
+
+/* ── TOPIC TAGS ── */
+.t-kyc{background:#f0ebff;color:#5a3d9e}
+.t-txn{background:var(--gold-light);color:var(--gold)}
+.t-sanc{background:var(--red-light);color:var(--red)}
+.t-rba{background:var(--green-light);color:var(--green)}
+.t-sar{background:var(--blue-light);color:var(--blue)}
+.t-stage{background:var(--accent-light);color:var(--accent)}
+.t-crypto{background:#e8f4fd;color:#1a5c8e}
+.t-fill{background:var(--purple-light);color:var(--purple)}
+
+/* ── LEGEND ── */
+.quiz-legend{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:20px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:8px}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink3)}
+.legend-dot{width:8px;height:8px;border-radius:2px}
+
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+/* ── BOTTOM TAB BAR (mobile only, hidden on desktop) ── */
+.bottom-tab-bar{display:none}
+
+/* ════════════════════════════════════════
+   MOBILE  ≤ 768px
+   ════════════════════════════════════════ */
+@media(max-width:768px){
+
+  /* hide desktop sidebar entirely */
+  .sidebar{display:none}
+
+  /* main fills full width, leaves room for bottom bar */
+  .main{
+    margin-left:0;
+    max-width:100%;
+    padding:16px 14px 90px;   /* bottom padding = tab bar height */
+  }
+
+  /* ── page header ── */
+  .page-header{margin-bottom:18px;gap:10px}
+  .page-title{font-size:22px}
+  .date-badge{font-size:10px;padding:4px 10px}
+
+  /* ── stat cards: 2-col grid ── */
+  .stats-row{grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+  .stat-card{padding:12px 10px}
+  .stat-num{font-size:22px}
+  .stat-label{font-size:9px}
+
+  /* ── concept cards: single column ── */
+  .concept-grid{grid-template-columns:1fr;gap:12px}
+  .concept-body{padding:14px}
+  .concept-name{font-size:15px}
+  .concept-desc{font-size:12.5px}
+
+  /* ── quiz cards ── */
+  .q-top{padding:14px 14px 12px;gap:10px}
+  .q-num{width:26px;height:26px;font-size:10px}
+  .q-en{font-size:13px}
+  .q-zh{font-size:11.5px}
+  .q-options{padding:10px 14px 14px;gap:6px}
+  .opt-label{padding:10px 11px;gap:8px}
+  .opt-key{width:22px;height:22px;min-width:22px;font-size:10px}
+  .opt-text{font-size:12.5px}
+
+  /* ── fill blanks: stack vertically ── */
+  .q-fill-area{padding:12px 14px 14px}
+  .blank-row{flex-direction:column;align-items:flex-start;gap:6px}
+  .blank-input{
+    width:100%;max-width:100%;min-width:0;
+    font-size:16px; /* prevents iOS zoom on focus */
+    padding:10px 12px;
+  }
+  .blank-hint{font-size:11px}
+  .fill-result-row{flex-wrap:wrap;gap:6px}
+
+  /* ── explanation box ── */
+  .q-explanation{margin:0 14px 14px;font-size:12px;padding:11px 13px}
+
+  /* ── result banner ── */
+  .result-banner{padding:20px 16px}
+  .result-score-big{font-size:44px}
+  .result-score-big span{font-size:22px}
+  .result-detail{gap:16px}
+
+  /* ── quiz legend: 2-col ── */
+  .quiz-legend{gap:10px;padding:10px 12px}
+  .legend-item{font-size:11px}
+
+  /* ── news cards ── */
+  .news-header{padding:12px 14px 10px}
+  .news-title{font-size:14px}
+  .news-body{padding:12px 14px}
+  .news-section p{font-size:12.5px}
+  .analyst-steps li{font-size:12.5px}
+
+  /* ── error book ── */
+  .error-tabs{gap:6px;margin-bottom:14px}
+  .etab{font-size:11px;padding:5px 12px}
+  .error-item{padding:13px 14px}
+  .error-q{font-size:12.5px}
+  .error-exp{font-size:12px}
+
+  /* ── history table: compress columns ── */
+  .history-table th,.history-table td{padding:8px 8px;font-size:11px}
+
+  /* ── buttons ── */
+  .btn{padding:12px 20px;font-size:13px}
+  .action-row{gap:8px;padding:14px 0}
+
+  /* ── card ── */
+  .card{padding:16px}
+
+  /* ══════════════════════
+     BOTTOM TAB BAR
+  ══════════════════════ */
+  .bottom-tab-bar{
+    display:flex;
+    position:fixed;
+    bottom:0;left:0;right:0;
+    height:64px;
+    background:var(--ink);
+    border-top:1px solid rgba(255,255,255,0.1);
+    z-index:200;
+    /* safe area for iPhone notch/home bar */
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  .tab-btn{
+    flex:1;
+    display:flex;flex-direction:column;
+    align-items:center;justify-content:center;
+    gap:3px;
+    cursor:pointer;
+    background:none;border:none;
+    color:rgba(255,255,255,0.45);
+    transition:color .15s;
+    padding:0;
+    -webkit-tap-highlight-color:transparent;
+    touch-action:manipulation;
+  }
+  .tab-btn.active{color:#fff}
+  .tab-btn.active .tab-icon{
+    background:rgba(200,65,10,0.25);
+    border-radius:10px;
+  }
+  .tab-icon{
+    font-size:20px;
+    width:36px;height:28px;
+    display:flex;align-items:center;justify-content:center;
+    transition:background .15s;
+  }
+  .tab-label{
+    font-family:var(--sans);
+    font-size:10px;font-weight:500;
+    letter-spacing:0.02em;
+    line-height:1;
+  }
+
+  /* ── safe area header padding ── */
+  .main{padding-top:calc(16px + env(safe-area-inset-top,0px))}
+}
+</style>
+</head>
+<body>
+<div class="app-shell">
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">AML · System v2</div>
+    <div class="logo-name">Daily<span>AML</span></div>
+  </div>
+  <div class="sidebar-nav">
+    <div class="nav-section-title">學習</div>
+    <div class="nav-item active" onclick="showPage('learn')" id="nav-learn"><span class="nav-icon">📖</span><span>今日學習</span></div>
+    <div class="nav-item" onclick="showPage('news')" id="nav-news"><span class="nav-icon">📰</span><span>時事分析</span></div>
+    <div class="nav-section-title">練習</div>
+    <div class="nav-item" onclick="showPage('quiz')" id="nav-quiz"><span class="nav-icon">✏️</span><span>每日題庫</span></div>
+    <div class="nav-section-title">記錄</div>
+    <div class="nav-item" onclick="showPage('errors')" id="nav-errors"><span class="nav-icon">🔴</span><span>錯題本</span></div>
+    <div class="nav-item" onclick="showPage('history')" id="nav-history"><span class="nav-icon">📊</span><span>學習紀錄</span></div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="day-counter" id="streak-label">學習連續天數</div>
+    <div class="streak-bar" id="streak-bar"></div>
+  </div>
+</nav>
+
+<main class="main">
+
+<!-- LEARN -->
+<div class="page active" id="page-learn">
+  <div class="page-header">
+    <div><div class="page-eyebrow">Day Learning · 今日學習</div><div class="page-title">AML <em>基礎概念</em></div></div>
+    <div class="date-badge" id="learn-date"></div>
+  </div>
+  <div class="concept-grid" id="concept-grid"></div>
+</div>
+
+<!-- NEWS -->
+<div class="page" id="page-news">
+  <div class="page-header">
+    <div><div class="page-eyebrow">Daily News · 時事分析</div><div class="page-title">AML <em>時事</em> 應用</div></div>
+    <div class="date-badge" id="news-date"></div>
+  </div>
+  <div id="news-container"></div>
+</div>
+
+<!-- QUIZ -->
+<div class="page" id="page-quiz">
+  <div class="page-header">
+    <div><div class="page-eyebrow">Daily Quiz · 每日題庫</div><div class="page-title">CAMS <em>模擬</em> 練習</div></div>
+    <div class="date-badge" id="quiz-date"></div>
+  </div>
+  <div class="quiz-legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--ink)"></div>選擇題 15題</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--purple)"></div>填空題 5題</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--gold)"></div>情境題</div>
+    <div class="legend-item"><div class="legend-dot" style="background:rgba(90,61,158,.4)"></div>首字母提示（選擇性參考）</div>
+  </div>
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-num" id="stat-answered">0</div><div class="stat-label">已作答</div></div>
+    <div class="stat-card"><div class="stat-num">20</div><div class="stat-label">總題數</div></div>
+    <div class="stat-card"><div class="stat-num" id="stat-mcq">15</div><div class="stat-label">選擇題</div></div>
+    <div class="stat-card"><div class="stat-num" id="stat-fill">5</div><div class="stat-label">填空題</div></div>
+    <div class="stat-card"><div class="stat-num" id="stat-score">—</div><div class="stat-label">本次得分</div></div>
+  </div>
+  <div class="quiz-progress-bar"><div class="quiz-progress-fill" id="quiz-progress" style="width:0%"></div></div>
+  <div class="result-banner" id="result-banner">
+    <div class="result-score-big" id="result-score-big">—<span>/20</span></div>
+    <div class="result-detail" id="result-detail"></div>
+    <div class="result-grade-badge" id="result-grade-badge">—</div>
+  </div>
+  <div id="quiz-container"></div>
+  <div class="warn-text" id="warn-text">⚠ 請完成所有題目（包含填空題）再提交</div>
+  <div class="action-row">
+    <button class="btn btn-primary" id="submit-btn" onclick="submitQuiz()">提交答案 →</button>
+    <button class="btn btn-secondary" id="reset-btn" onclick="resetQuiz()" style="display:none">🔄 重新出題</button>
+  </div>
+</div>
+
+<!-- ERRORS -->
+<div class="page" id="page-errors">
+  <div class="page-header">
+    <div><div class="page-eyebrow">Error Book · 錯題本</div><div class="page-title"><em>錯題</em> 複習</div></div>
+    <button class="btn btn-danger" onclick="clearErrors()">清除全部</button>
+  </div>
+  <div class="error-tabs">
+    <div class="etab active" onclick="filterErrors('all',this)">全部</div>
+    <div class="etab" onclick="filterErrors('mcq',this)">選擇題</div>
+    <div class="etab" onclick="filterErrors('fill',this)">填空題</div>
+  </div>
+  <div id="errors-container"></div>
+</div>
+
+<!-- HISTORY -->
+<div class="page" id="page-history">
+  <div class="page-header">
+    <div><div class="page-eyebrow">History · 學習紀錄</div><div class="page-title">歷史 <em>成績</em></div></div>
+    <button class="btn btn-secondary" onclick="clearHistory()">清除紀錄</button>
+  </div>
+  <div class="stats-row" id="history-stats"></div>
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon">📈</div>
+      <div><div class="card-title">作答紀錄</div><div class="card-subtitle">所有歷史成績</div></div>
+    </div>
+    <table class="history-table">
+      <thead><tr><th>日期</th><th>得分</th><th>正確率</th><th>選擇</th><th>填空</th><th>評等</th></tr></thead>
+      <tbody id="history-tbody"></tbody>
+    </table>
+    <div id="history-empty" class="empty-state" style="display:none">
+      <div class="empty-icon">📋</div><div class="empty-text">尚無作答紀錄，完成第一次測驗後將自動記錄</div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<!-- ── BOTTOM TAB BAR (mobile) ── -->
+<nav class="bottom-tab-bar" id="bottom-tab-bar">
+  <button class="tab-btn active" id="tab-learn" onclick="showPage('learn')" aria-label="今日學習">
+    <div class="tab-icon">📖</div>
+    <span class="tab-label">學習</span>
+  </button>
+  <button class="tab-btn" id="tab-news" onclick="showPage('news')" aria-label="時事分析">
+    <div class="tab-icon">📰</div>
+    <span class="tab-label">時事</span>
+  </button>
+  <button class="tab-btn" id="tab-quiz" onclick="showPage('quiz')" aria-label="每日題庫">
+    <div class="tab-icon">✏️</div>
+    <span class="tab-label">題庫</span>
+  </button>
+  <button class="tab-btn" id="tab-errors" onclick="showPage('errors')" aria-label="錯題本">
+    <div class="tab-icon">🔴</div>
+    <span class="tab-label">錯題</span>
+  </button>
+  <button class="tab-btn" id="tab-history" onclick="showPage('history')" aria-label="學習紀錄">
+    <div class="tab-icon">📊</div>
+    <span class="tab-label">紀錄</span>
+  </button>
+</nav>
+
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════
+// DATA: CONCEPTS (unchanged from v1, abbreviated here)
+// ══════════════════════════════════════════════════════
+const CONCEPTS=[
+  {name:"KYC（了解您的客戶）",en:"Know Your Customer (KYC)",color:"#7c5cba",keywords:["KYC","Customer Identification","CIP","Identity Verification","Beneficial Owner"],desc:"金融機構在建立業務關係前，必須確認客戶身份的程序。核心問題：這個人是誰？從事什麼業務？資金從哪來？",bankEx:"銀行：個人開戶需提供護照、地址證明；企業需提供公司登記文件與股東名冊，識別持股25%以上的最終實益擁有人（UBO）。",cryptoEx:"Crypto：交易所要求用戶上傳護照自拍（liveness check），並驗證錢包地址所有權，對大額用戶執行 Source of Funds 調查。"},
+  {name:"CDD / EDD（客戶盡職調查）",en:"Customer Due Diligence / Enhanced DD",color:"#c8410a",keywords:["CDD","EDD","SDD","Source of Wealth","Source of Funds","PEP","Risk Rating"],desc:"CDD 是 KYC 的執行過程，分三個層次：SDD（低風險，簡化）、Standard CDD（一般）、EDD（高風險，強化）。判斷依據是客戶風險評分。",bankEx:"銀行：PEP 客戶須執行 EDD，調查財富來源（Source of Wealth）、資金來源（Source of Funds），並取得高層授權才能開戶。",cryptoEx:"Crypto：用戶資金來源為挖礦收益或 ICO 投資者，須提交區塊鏈交易記錄及對應法幣出入金紀錄作為 SoF 佐證。"},
+  {name:"洗錢三階段",en:"Placement / Layering / Integration",color:"#b8860b",keywords:["Placement","Layering","Integration","Structuring","Smurfing","Shell Company","TBML"],desc:"洗錢通常分三階段：放置（將現金進入金融系統）→ 分層（多層交易掩蓋來源）→ 整合（讓資金看起來合法回歸經濟）。",bankEx:"銀行：毒梟將現金拆分成每筆 $9,800 在不同分行存入，再透過空殼公司跨境匯款，最終以顧問費名義收款。",cryptoEx:"Crypto：駭客竊得 ETH 後，透過 mixer 打亂路徑，換成 USDC 後透過多個 DEX 兌換，最終在 OTC 平台換成現金。"},
+  {name:"SAR（可疑活動申報）",en:"Suspicious Activity Report (SAR)",color:"#1a5c8e",keywords:["SAR","STR","FinCEN","Tipping Off","Safe Harbor","30-day Rule","Red Flags"],desc:"金融機構發現疑似洗錢或金融犯罪行為時，須向主管機關（美國：FinCEN）提交 SAR。申報後絕對不能告知客戶（Tipping Off 禁令）。",bankEx:"銀行：建築工人帳戶突然每週出現 $50,000 現金存款並立即電匯海外，調查後無法合理解釋，30 天內提交 SAR，全程不告知客戶。",cryptoEx:"Crypto：用戶入金錢包有與 Tornado Cash 的鏈上交互記錄，即使已通過 KYC，仍評估提交 SAR 並同步進行制裁篩查。"},
+  {name:"制裁篩查（OFAC / UN）",en:"Sanctions Screening (OFAC/UN)",color:"#8e1a1a",keywords:["OFAC","SDN List","UN Sanctions","Fuzzy Match","Long-Arm Jurisdiction","CAATSA","Blocking"],desc:"金融機構須篩查客戶、交易對手與資金是否命中制裁名單。OFAC 的長臂管轄原則：任何涉及美元清算的交易均受管轄。",bankEx:"銀行：收到電匯，受益人名稱與 SDN 名單產生 78% 模糊命中，立即暫停交易並進行人工確認，確認後 10 個工作日內向 OFAC 申報。",cryptoEx:"Crypto：區塊鏈分析工具偵測到入金地址與 OFAC 制裁地址有直接交互，立即凍結帳戶並進行制裁合規評估。"},
+  {name:"風險基礎方法（RBA）",en:"Risk-Based Approach (RBA)",color:"#1a5c3a",keywords:["RBA","Risk Appetite","Risk Assessment","Inherent Risk","Residual Risk","DNFBP"],desc:"將有限的合規資源集中於高風險領域。高風險客戶需 EDD，低風險可 SDD，但並非豁免 CDD。FATF 要求 DNFBP 同樣適用。",bankEx:"銀行：對私人銀行客戶、離岸公司、高風險地區客戶執行 EDD；對固定薪資轉帳的受僱員工可執行 SDD。",cryptoEx:"Crypto：交易所對年交易量超過 $100,000 的帳戶自動升級至 EDD；對 $1,000 以下的小額用戶允許匿名交易（部分司法管轄區）。"},
+  {name:"Travel Rule（旅行規則）",en:"FATF Travel Rule / Wire Transfer Rule",color:"#1a3c6e",keywords:["Travel Rule","VASP","Originator","Beneficiary","Threshold","IBAN","Blockchain Analytics"],desc:"超過門檻的電匯或虛擬資產轉帳，必須隨附發起人與受益人資訊（姓名、帳號/錢包地址等）。加密版本由 FATF 2019年更新。",bankEx:"銀行：$3,000 以上的跨境電匯須附帶發起人全名、帳號與地址；收款行須驗證受益人資訊。",cryptoEx:"Crypto：VASP 間的虛擬資產轉帳超過 $1,000（FATF 建議門檻），必須傳遞發起人與受益人的 KYC 資訊。"},
+  {name:"交易監控（TM）",en:"Transaction Monitoring (TM)",color:"#5a7a2e",keywords:["TM","Alert","Threshold","Behavioural Analytics","False Positive","Typology","Red Flag"],desc:"透過規則引擎或 AI 模型持續監控客戶交易行為，偵測異常並產生警示（Alert）。分析師負責調查 Alert 並決定是否提交 SAR。",bankEx:"銀行：設定規則：「帳戶在7天內跨境電匯超過 $50,000 且目的地為高風險地區」→ 自動產生警示，由 L1 分析師完成調查。",cryptoEx:"Crypto：區塊鏈分析系統標記：入金地址與 mixer 有過去30天內的鏈上交互 → 自動凍結提款並觸發人工審查流程。"}
+];
+
+// ══════════════════════════════════════════════════════
+// DATA: NEWS
+// ══════════════════════════════════════════════════════
+const NEWS_ITEMS=[
+  {tag:"crypto",tagLabel:"Crypto AML",title:"Tornado Cash 開發者 Roman Storm 聯邦訴訟進展",date:"2024–2025 持續發展",summary:"Tornado Cash 混幣協議的核心開發者 Roman Storm 在美國面臨洗錢共謀等聯邦指控。OFAC 已於 2022 年直接制裁 Tornado Cash 智能合約地址，主張協議被朝鮮駭客集團 Lazarus Group 用來洗白逾 $7 億美元加密資產。",risks:["智能合約無身份驗證（No KYC），等於提供匿名資金混淆工具","任何與 Tornado Cash 合約地址有直接或間接鏈上交互的錢包，均可能被 OFAC 視為受制裁","開發者是否承擔 AML 義務成為 Web3 最重要的法律前例"],steps:["在區塊鏈分析平台設定規則：偵測入金錢包與 Tornado Cash 合約的直接或一跳（1-hop）交互","命中警示立即暫停提款，啟動 EDD 調查並評估 OFAC 制裁曝露程度","若資金來源無法合理解釋，提交 SAR 並評估是否同步向 OFAC 申報"]},
+  {tag:"sanc",tagLabel:"Sanctions",title:"幣安 $43 億 DOJ 和解後持續接受合規監察",date:"2024–2025",summary:"幣安於 2023 年底與美國 DOJ、FinCEN 達成史上最大加密貨幣 AML 和解（$43 億），承認允許制裁地區用戶交易、KYC 程序嚴重不足，現處於法院指定合規監察官監督。",risks:["允許制裁地區 IP 地址的用戶使用匿名帳戶交易，繞過地理圍欄","KYC 流程存在系統性漏洞，大量空殼帳戶可進行大額交易","VASP 依 FATF 框架與銀行負有相同的 AML 義務，但執行標準差異巨大"],steps:["定期對所有用戶進行 IP 地址、錢包地址及 KYC 文件的制裁篩查","對高風險地區用戶自動限制並觸發 EDD，不依賴用戶自申報地區","建立完整 AML 政策文件庫，確保監管審查時有完整書面紀錄"]},
+  {tag:"reg",tagLabel:"Regulation",title:"歐盟 AMLA 成立：統一 AML 監管機構",date:"2024–2025",summary:"歐盟反洗錢局（AMLA）正式成立，總部設於法蘭克福，預計 2026 年開始直接監管高風險金融機構（包括部分大型加密交易所）。",risks:["跨境業務機構面臨多重司法管轄區監管標準衝突","VASP 將首次面臨與銀行同等級的直接 EU 監管壓力","合規成本大幅上升，特別是中小型金融機構"],steps:["密切追蹤 AMLA 發布的技術標準（RTS/ITS），確保 AML 政策及時更新","提前評估旗下業務是否落入 AMLA 直接監管範疇，準備對應文件","建立跨司法管轄區的 AML 合規矩陣，識別各地法規差異"]},
+  {tag:"aml",tagLabel:"AML",title:"FinCEN 發布房地產反洗錢最終規則",date:"2024",summary:"美國 FinCEN 發布最終規則，要求不動產交易（特別是全現金購房）的相關人員須申報受益人資訊，針對高端房地產被用作洗錢整合工具的問題。",risks:["高端不動產是 Integration 階段最常用的工具之一","律師、公證人、房仲等 DNFBP 成為 AML 合規的新重點對象","空殼公司購房大幅增加 UBO 識別難度"],steps:["更新 CDD 程序，將房地產相關業務的 UBO 識別納入客戶風險評估","對以現金購入高價值不動產的客戶執行 EDD，要求提供 Source of Funds 文件","訓練 DNFBP 合作夥伴了解其在新規則下的申報義務"]}
+];
+
+// ══════════════════════════════════════════════════════
+// DATA: MCQ BANK (15 questions drawn from 25)
+// ══════════════════════════════════════════════════════
+const MCQ_BANK=[
+  {id:"m1",type:"mcq",topic:"kyc",topicLabel:"KYC / EDD",scenario:true,en:"A private bank is onboarding a former Finance Minister who left office 14 months ago. He insists on being treated as a standard customer. What is MOST appropriate?",zh:"一位前財政部長卸任14個月，堅持要求以普通客戶身份開戶。最適當的處理方式為何？",opts:["A. Standard CDD — political role has ended / 標準 CDD，政治職務已結束","B. EDD — former PEPs retain elevated risk for a period after leaving office / EDD，前 PEP 在卸任後仍維持較高風險","C. Decline immediately — all ex-officials are prohibited / 立即拒絕，所有前官員均禁止往來","D. SDD — retired status reduces risk / SDD，退休狀態降低風險"],correct:"B",exp:"FATF 指引明確指出，PEP 身份在卸任後仍需維持風險評估期（通常建議至少12個月）。前財長屬 Foreign PEP，風險最高，應執行 EDD 包括 Source of Wealth 與 Source of Funds 的完整調查。SDD 僅適用低風險客戶。"},
+  {id:"m2",type:"mcq",topic:"stage",topicLabel:"洗錢三階段",scenario:true,en:"A drug trafficker deposits $9,800 cash at five different branches on the same day, staying below the $10,000 CTR threshold. Which stage and typology is this?",zh:"一名毒販在同一天於五家分行各存入 $9,800，刻意低於 CTR 門檻。此為哪個階段與手法？",opts:["A. Integration — Loan-back scheme","B. Placement — Structuring (Smurfing)","C. Layering — Shell company transfers","D. Placement — TBML"],correct:"B",exp:"此為 Placement（放置）階段，手法為 Structuring（結構化），俗稱 Smurfing。在美國 BSA 下，Structuring 本身即為聯邦犯罪，即使資金合法，只要有意規避 CTR 申報義務即違法。"},
+  {id:"m3",type:"mcq",topic:"crypto",topicLabel:"Crypto AML",scenario:true,en:"A blockchain analytics tool flags a deposit wallet as having direct interaction with Tornado Cash 36 hours before deposit. Customer claims 'privacy.' What is MOST appropriate?",zh:"區塊鏈工具偵測到存款錢包36小時前與 Tornado Cash 有直接交互，客戶稱為「隱私需求」。最適當的回應？",opts:["A. Accept — privacy is legitimate / 接受，隱私是合理需求","B. Escalate for SAR consideration — mixer use is a major red flag / 啟動 SAR 評估，混幣器使用為重大紅旗","C. Request a blockchain compliance certificate / 要求提供區塊鏈合規憑證","D. Monitor 90 days before action / 監控90天後再行動"],correct:"B",exp:"Tornado Cash 已被 OFAC 制裁（2022）。混幣器使用是 FinCEN 與 FATF 均列明的重大洗錢紅旗。完成 KYC 不能排除洗錢風險，必須立即啟動 SAR 評估。「隱私需求」不能作為充分解釋。"},
+  {id:"m4",type:"mcq",topic:"sanc",topicLabel:"Sanctions / OFAC",scenario:true,en:"A U.S. bank's system generates a 77% fuzzy match between a wire beneficiary and an OFAC SDN entity. What should the team do FIRST?",zh:"美國銀行系統就一筆電匯的受益人與 OFAC SDN 產生77%模糊命中。合規團隊應最先採取什麼行動？",opts:["A. Release — below 100% means no hit / 放行，未達100%不算命中","B. Block and report to OFAC within 10 business days / 立即封鎖並10個工作日內申報","C. Place on hold and conduct manual enhanced review / 暫停並進行人工強化複核","D. Contact originating bank first / 先聯繫匯款行"],correct:"C",exp:"模糊命中時，正確流程是先暫停交易並進行人工複核，排除誤報或確認真正命中。確認命中後才需在10個工作日內向 OFAC 申報（OFAC 報告，非 SAR）。"},
+  {id:"m5",type:"mcq",topic:"rba",topicLabel:"Risk-Based Approach",scenario:false,en:"Which MOST accurately describes the principle of a Risk-Based Approach (RBA) to AML?",zh:"下列哪項最準確描述 AML 中風險基礎方法（RBA）的原則？",opts:["A. All customers receive identical due diligence / 所有客戶接受相同盡職調查","B. Higher-risk customers require EDD; lower-risk may receive SDD / 高風險需 EDD，低風險可執行 SDD","C. RBA allows skipping CDD for low-risk customers entirely / RBA 允許對低風險客戶跳過 CDD","D. RBA only applies to banks, not DNFBPs / RBA 僅適用銀行"],correct:"B",exp:"RBA 的核心是將資源集中於高風險領域。SDD 是簡化而非省略 CDD。FATF 第22條明確要求 DNFBP（律師、會計師、房仲等）同樣適用 RBA。"},
+  {id:"m6",type:"mcq",topic:"sar",topicLabel:"SAR / Tipping Off",scenario:true,en:"A compliance officer determines a long-standing customer's cash deposits are suspicious and meet SAR criteria. A colleague mentions to the customer 'compliance has been looking at your account.' What violation occurred?",zh:"合規人員認定客戶存款可疑並達 SAR 標準，但同事隨口告訴客戶「合規部門在看你的帳戶」。發生了什麼違規？",opts:["A. Failure to file CTR / 未提交 CTR","B. Tipping off — disclosing an SAR investigation to the subject / Tipping Off — 向當事人洩露 SAR 調查","C. Breach of data privacy only / 僅違反資料隱私","D. Failure to apply EDD / 未執行 EDD"],correct:"B",exp:"這是 Tipping Off 的典型案例。SAR 的保密性受法律保護，任何形式的洩露（包括間接暗示）均可能構成犯罪。美國 BSA 和英國《2002年收益罪行法》均有明確的刑事罰則。"},
+  {id:"m7",type:"mcq",topic:"kyc",topicLabel:"UBO / Shell Company",scenario:true,en:"A BVI-registered company with nominee directors and bearer shares applies to open an account. UBO is not disclosed. What is MOST appropriate?",zh:"一家 BVI 註冊、使用名義董事且設有無記名股票的公司申請開戶，未揭露 UBO。最適當的回應？",opts:["A. Standard CDD — BVI not on sanctions list / 標準 CDD，BVI 不在制裁名單","B. Apply EDD and require full UBO disclosure before onboarding / 執行 EDD，要求開戶前完整揭露 UBO","C. Request company registration certificate only / 僅要求公司登記證書","D. Decline all BVI companies / 拒絕所有 BVI 公司"],correct:"B",exp:"BVI + 名義董事 + 無記名股票 = 典型匿名殼公司高風險結構。FATF 第24條要求識別並核實 UBO（通常為持股25%以上的真實個人）。無法取得 UBO 資訊是拒絕服務的正當理由，但並非所有 BVI 公司都必須拒絕。"},
+  {id:"m8",type:"mcq",topic:"sanc",topicLabel:"UN vs OFAC",scenario:false,en:"Which BEST describes the difference between OFAC sanctions and UN sanctions?",zh:"哪項最準確說明 OFAC 制裁與聯合國制裁的差異？",opts:["A. OFAC applies only to U.S. citizens / OFAC 僅適用美國公民","B. OFAC covers any transaction with U.S. nexus; UN binds all member states via domestic legislation / OFAC 適用所有涉美交易；UN 須透過各國立法落實","C. UN sanctions supersede OFAC / UN 制裁效力高於 OFAC","D. Both lists are identical / 兩份名單完全相同"],correct:"B",exp:"OFAC 依「長臂管轄原則」：任何涉及美元清算、美國人或美國金融機構的交易均受管轄。UN 制裁對所有成員國具約束力，但各國執行標準因立法完整程度而異。兩份名單並不相同。"},
+  {id:"m9",type:"mcq",topic:"stage",topicLabel:"洗錢三階段",scenario:true,en:"A criminal buys luxury real estate with laundered funds, sells it two years later, and deposits proceeds as 'investment income.' Which ML stage is this?",zh:"一名犯罪分子以洗白資金購入豪宅，兩年後出售，並將款項以「投資收益」名義存入帳戶。此為哪個洗錢階段？",opts:["A. Placement — cash entering the financial system / 放置階段","B. Layering — shell company transfers / 分層階段","C. Integration — laundered funds re-enter as legitimate income / 整合階段","D. Placement — real estate is a common entry point / 放置階段，房地產是常見進入點"],correct:"C",exp:"Integration（整合）階段是讓已洗白的資金以合法外觀回歸正常經濟體。高端不動產是最常見的整合工具：購入→持有→出售→產生看似合法的資本利得。"},
+  {id:"m10",type:"mcq",topic:"txn",topicLabel:"Transaction Monitoring",scenario:true,en:"A TM alert flags a local restaurant's corporate account: 12 wire transfers to 8 countries in 5 days, $320,000 total, withdrawn immediately upon receipt. What is the analyst's BEST first step?",zh:"交易監控警示一家本地餐廳帳戶：5天內向8個國家共12筆電匯，合計 $320,000，款項一到即提現。分析師最佳的第一步？",opts:["A. File SAR immediately / 立即申報 SAR","B. Close the account / 立即關閉帳戶","C. Review history, business profile, consult RM, then decide on SAR / 複核歷史、業務性質，諮詢 RM 後再決定","D. Escalate directly to law enforcement / 直接通報執法機關"],correct:"C",exp:"交易監控的正確流程是「先調查、後決定」。分析師需先複核 CDD、查閱帳戶歷史，並詢問關係經理（RM）是否有合理商業解釋，才決定是否申報 SAR。"},
+  {id:"m11",type:"mcq",topic:"crypto",topicLabel:"DeFi / Crypto",scenario:true,en:"A high-frequency trader consistently uses cross-chain bridges and DeFi across 4 blockchains before depositing to a CEX. KYC is complete. What is the PRIMARY AML concern?",zh:"一名高頻交易者習慣性地使用跨鏈橋與 DeFi 在4條鏈間流轉資金後存入交易所。KYC 已完成。最主要的 AML 疑慮？",opts:["A. Multiple blockchains create operational complexity / 多鏈增加操作複雜性","B. Cross-chain bridges obscure fund origins — potential Layering / 跨鏈橋可模糊資金來源，可能為 Layering","C. DeFi is illegal in most jurisdictions / DeFi 在大多數管轄區違法","D. Minimal risk since KYC is complete / 風險極低，KYC 已完成"],correct:"B",exp:"跨鏈橋與 DeFi 協議使傳統區塊鏈分析工具難以還原完整資金路徑，正是 Layering 的典型手法。選項D是常見陷阱：完成 KYC 不等於排除後續洗錢風險。"},
+  {id:"m12",type:"mcq",topic:"sar",topicLabel:"SAR Timing",scenario:false,en:"Under the U.S. Bank Secrecy Act (BSA), what are the standard SAR filing deadlines?",zh:"依據美國《銀行保密法》（BSA），SAR 申報的標準時限為何？",opts:["A. 15 days / 30 days extended / 標準15天，延長30天","B. 30 days / 60 days if investigation needed / 標準30天，需調查時60天","C. 45 days / 90 days extended / 標準45天，延長90天","D. 60 days / no extension / 標準60天，不可延長"],correct:"B",exp:"美國 BSA 規定：偵測到可疑活動後，原則上須在30個日曆天內提交 SAR。若需進一步識別可疑人員，可延長至60天。此時限計算自「偵測日」起算。"},
+  {id:"m13",type:"mcq",topic:"stage",topicLabel:"TBML",scenario:true,en:"A trading company invoices 'electronic components' at 40% above market rate, with payments to a shell company in a high-risk jurisdiction. Which red flag pattern?",zh:"一家貿易公司開具「電子零件」發票，金額比市場高出40%，款項匯往高風險地區的空殼公司。此最符合哪種紅旗模式？",opts:["A. Smurfing — multiple small cash transactions / 多筆小額現金交易","B. TBML — over-invoicing / 貿易型洗錢，過度開票","C. Layering via cryptocurrency / 透過加密貨幣分層","D. Integration — real estate / 整合階段，不動產"],correct:"B",exp:"Over-invoicing（過度開票）是 TBML 最典型的手法之一，透過虛報商品價格合法地跨境轉移資金。其他 TBML 手法包括 Under-invoicing、Multiple invoicing、Falsely described goods。"},
+  {id:"m14",type:"mcq",topic:"kyc",topicLabel:"PEP Screening",scenario:false,en:"Which BEST describes the purpose of a PEP screening program?",zh:"下列何者最能描述 PEP 篩查程序的目的？",opts:["A. Automatically block all transactions from government officials / 自動阻擋所有政府官員的交易","B. Identify individuals susceptible to corruption due to public position, and apply EDD / 識別因公職身份而易受腐敗影響的個人，並執行 EDD","C. Screen for individuals with criminal convictions / 篩查有前科人員","D. Comply with UN sanctions for government entities / 遵循 UN 制裁對政府實體的要求"],correct:"B",exp:"PEP 篩查的目的是識別因擔任重要公職而可能面臨腐敗風險的人士，並依其風險程度執行 EDD。PEP 本身不是犯罪，不應自動拒絕，但須強化監控與盡調。"},
+  {id:"m15",type:"mcq",topic:"crypto",topicLabel:"Sanctions / Crypto",scenario:true,en:"A VASP's blockchain analytics shows a customer's wallet has 'second-hop exposure' to an OFAC-sanctioned address (Sanctioned → Intermediate → Customer). How should the VASP respond?",zh:"VASP 的區塊鏈分析顯示客戶錢包對 OFAC 制裁地址有「第二跳曝露」（制裁→中間→客戶）。VASP 應如何回應？",opts:["A. Ignore — too indirect to be a concern / 忽略，太間接不需關注","B. Auto-freeze — all OFAC exposure requires blocking / 自動凍結，所有 OFAC 曝露須封鎖","C. Assess materiality, investigate customer knowledge, consider SAR / 評估重要性，調查客戶了解程度，考慮申報 SAR","D. Request OFAC pre-clearance / 先取得 OFAC 預先許可"],correct:"C",exp:"間接制裁曝露需依「重要性（Materiality）」與「接近程度（Proximity）」進行評估。正確流程：評估間接曝露的金額與比例 → 調查客戶是否知情 → 若無法解釋，提交 SAR。第二跳曝露仍須有文件記錄的評估過程。"},
+  {id:"m16",type:"mcq",topic:"txn",topicLabel:"Red Flags",scenario:true,en:"A retail customer transfers exactly $9,999 to the same overseas account on 5 consecutive Mondays. What does this MOST likely indicate?",zh:"一名零售客戶連續5個星期一，每次轉帳恰好 $9,999 至同一海外帳戶。此最可能指向哪種模式？",opts:["A. Normal salary payment pattern / 正常薪資匯款模式","B. Structuring with periodic pattern — deliberate threshold avoidance / 結構化加週期性模式，刻意規避門檻","C. Real estate installment payments / 不動產分期付款","D. TBML — over-invoicing / 貿易型洗錢"],correct:"B",exp:"連續、固定金額且略低於申報門檻（$10,000），加上固定週期（每週一），是 Structuring 的強烈指標。「週期性結構化」是交易監控系統應設定偵測的典型規則。"},
+  {id:"m17",type:"mcq",topic:"rba",topicLabel:"EDD Triggers",scenario:true,en:"Which customer profile would MOST likely trigger EDD under a Risk-Based Approach?",zh:"在風險基礎方法下，下列哪種客戶特徵最可能觸發 EDD？",opts:["A. Retired teacher with fixed monthly pension / 有固定月薪退休金的退休教師","B. Domestic SME with consistent cash flows / 有穩定現金流的本地中小企業主","C. Non-resident foreign national with shares in multiple offshore holding structures in high-risk jurisdictions / 持有多個高風險地區離岸控股結構的非居民外籍人士","D. Salaried employee with transfers matching payroll records / 轉帳與薪資紀錄相符的受薪員工"],correct:"C",exp:"EDD 觸發因素通常包括：非居民客戶、持有離岸控股結構（特別是在高風險地區）、PEP 或其關聯人、現金密集型業務、複雜法律結構等。選項C同時符合多個高風險指標。"},
+  {id:"m18",type:"mcq",topic:"sanc",topicLabel:"Sanctions Evasion",scenario:true,en:"A sanctioned country's company uses a front company in a neutral country to purchase U.S. goods and re-export them to the sanctioned country. This is an example of:",zh:"一家制裁國公司，利用中立國的前台公司購買美國商品，再轉口至制裁國。這是什麼的例子？",opts:["A. TBML — over-invoicing / TBML，商品過度開票","B. Sanctions evasion via transshipment and front company / 透過轉口與前台公司的制裁規避","C. Layering via trade finance / 透過貿易融資的分層","D. Integration of illicit funds / 非法資金整合"],correct:"B",exp:"透過中立國前台公司轉口制裁物品是制裁規避（Sanctions Evasion）的典型手法。此行為違反 OFAC 的出口管制與制裁法規。紅旗：貨物最終目的地與申報目的地不符、中間商無明顯業務合理性。"},
+  {id:"m19",type:"mcq",topic:"kyc",topicLabel:"Correspondent Banking",scenario:false,en:"In correspondent banking, what does 'nested correspondent banking' refer to?",zh:"在代理銀行業務中，「巢狀代理銀行業務（Nested Correspondent Banking）」是什麼？",opts:["A. A bank holding accounts for its own subsidiaries / 銀行為自身子公司開立帳戶","B. A respondent bank providing correspondent services to other banks through the correspondent's account, obscuring true originators / 受代理銀行透過帳戶為其他銀行提供代理服務，掩蓋真實發起人","C. Foreign banks holding accounts at multiple U.S. banks simultaneously / 外國銀行同時在多家美國銀行開立帳戶","D. Wire transfers passing through more than two banks / 電匯通過兩家以上銀行"],correct:"B",exp:"Nested Correspondent Banking 是代理銀行風險中最嚴重的問題之一。受代理銀行將帳戶「轉借」給其他金融機構使用，使通訊銀行完全看不見最終交易發起人，嚴重阻礙 KYC 與監控。"},
+  {id:"m20",type:"mcq",topic:"sar",topicLabel:"SAR Quality",scenario:false,en:"Which BEST describes a high-quality SAR narrative?",zh:"下列哪項最能描述高品質 SAR 敘述（Narrative）的特徵？",opts:["A. Brief — only amounts and dates / 簡短，僅含金額與日期","B. Includes 5W1H with specific details and clear explanation of why activity is suspicious / 包含5W1H，附具體細節並清楚說明為何可疑","C. Contains legal conclusions about the crime / 包含對所犯罪行的法律結論","D. Limited to one page / 限制在一頁"],correct:"B",exp:"高品質 SAR 敘述應遵循「5W1H」原則：Who、What、When、Where、Why、How。應包含具體金額、帳號、交易日期等可供執法機關使用的情報。不應包含法律結論，而應呈現事實。"}
+];
+
+// ══════════════════════════════════════════════════════
+// DATA: FILL-IN-THE-BLANK BANK (10 questions, 5 drawn per session)
+// ══════════════════════════════════════════════════════
+const FILL_BANK=[
+  {
+    id:"f1",type:"fill",topic:"kyc",topicLabel:"KYC / CDD",
+    en:"Customer Due Diligence (CDD) refers to the process of ______ a customer's identity, understanding their business activities, and assessing their ______ risk profile.",
+    zh:"客戶盡職調查（CDD）是指 ______ 客戶身份、了解其業務活動，並評估其 ______ 風險特徵的過程。",
+    blanks:[
+      {label:"Blank 1",hint:"V...ing (首字母 V)",answers:["verifying","verify","verification"],zh_ans:"核實（verifying）",partial:false},
+      {label:"Blank 2",hint:"首字母 M",answers:["money laundering","ML","AML","financial crime"],zh_ans:"洗錢（money laundering）",partial:true}
+    ],
+    exp:"CDD 是 AML 合規的核心程序，三個要素缺一不可：(1) 核實身份（Verify identity）；(2) 了解業務性質（Understand the nature of business）；(3) 評估洗錢/資恐風險（Assess ML/TF risk）。CDD 在整個業務關係存續期間持續進行（Ongoing CDD）。"
+  },
+  {
+    id:"f2",type:"fill",topic:"stage",topicLabel:"洗錢三階段",
+    en:"Money laundering has three stages: ______ (introducing illicit funds into the financial system), ______ (obscuring the trail), and ______ (making funds appear legitimate).",
+    zh:"洗錢分為三個階段：______ （將非法資金引入金融系統）、______（掩蓋資金路徑）、______（使資金看起來合法）。",
+    blanks:[
+      {label:"Stage 1",hint:"首字母 P",answers:["placement"],zh_ans:"Placement（放置）",partial:false},
+      {label:"Stage 2",hint:"首字母 L",answers:["layering"],zh_ans:"Layering（分層）",partial:false},
+      {label:"Stage 3",hint:"首字母 I",answers:["integration"],zh_ans:"Integration（整合）",partial:false}
+    ],
+    exp:"洗錢三階段是最基礎的 CAMS 考點：Placement（放置）— 將現金引入金融體系，最容易被發現的階段；Layering（分層）— 透過多層複雜交易掩蓋資金來源；Integration（整合）— 使洗白的資金以合法外觀回歸經濟體系，最難被偵測的階段。"
+  },
+  {
+    id:"f3",type:"fill",topic:"sar",topicLabel:"SAR / FinCEN",
+    en:"SAR stands for ______. In the United States, financial institutions must file SARs with ______, a bureau of the U.S. Department of the Treasury.",
+    zh:"SAR 全文為 ______。在美國，金融機構須向 ______（美國財政部下轄機構）提交 SAR。",
+    blanks:[
+      {label:"Full name",hint:"S___ A___ R___",answers:["suspicious activity report","suspicious activity reports"],zh_ans:"Suspicious Activity Report（可疑活動申報）",partial:false},
+      {label:"Agency",hint:"首字母 F",answers:["fincen","financial crimes enforcement network"],zh_ans:"FinCEN（金融犯罪執法局）",partial:true}
+    ],
+    exp:"SAR（Suspicious Activity Report）是金融機構向主管機關申報可疑活動的正式文件。美國的申報機構是 FinCEN（Financial Crimes Enforcement Network，金融犯罪執法網絡），屬於美國財政部下轄機構。其他國家的對應機構：英國 NCA、香港 JFIU、台灣 AMLJC。"
+  },
+  {
+    id:"f4",type:"fill",topic:"crypto",topicLabel:"Crypto AML",
+    en:"In blockchain AML, a ______ is a service used to obscure transaction trails by mixing cryptocurrency from multiple sources, making it difficult to trace the origin of funds.",
+    zh:"在區塊鏈 AML 中，______ 是一種透過混合來自多個來源的加密貨幣來掩蓋交易路徑的服務，使資金來源難以追蹤。",
+    blanks:[
+      {label:"Term",hint:"M_____ / T_____（混幣器）",answers:["mixer","tumbler","crypto mixer","cryptocurrency mixer","mixing service"],zh_ans:"Mixer / Tumbler（混幣器）",partial:true}
+    ],
+    exp:"加密貨幣混幣器（Mixer / Tumbler）是 Crypto AML 最重要的紅旗指標之一。其運作原理是將多個用戶的加密貨幣混合後，再分別送出，切斷原始錢包與目標錢包的鏈上聯繫。OFAC 於2022年制裁 Tornado Cash，FinCEN 已將其定性為洗錢工具。任何與混幣器交互的資金均應觸發強化審查。"
+  },
+  {
+    id:"f5",type:"fill",topic:"kyc",topicLabel:"PEP Definition",
+    en:"A PEP (______ ______ ______) is an individual who holds or has held a prominent public position, such as a head of state, senior government official, or senior executive of a state-owned enterprise.",
+    zh:"PEP（______ ______ ______）是指擔任或曾擔任重要公職的個人，如國家元首、高級政府官員或國有企業高階主管。",
+    blanks:[
+      {label:"P =",hint:"首字母 P",answers:["politically","political"],zh_ans:"Politically（政治上的）",partial:true},
+      {label:"E =",hint:"首字母 E",answers:["exposed","exposure"],zh_ans:"Exposed（曝露的）",partial:true},
+      {label:"P =",hint:"首字母 P",answers:["person","persons","people"],zh_ans:"Person（人物）",partial:true}
+    ],
+    exp:"PEP = Politically Exposed Person（政治公眾人物）。分三類：(1) Foreign PEP（外國 PEP，風險最高）；(2) Domestic PEP（本國 PEP）；(3) IO PEP（國際組織 PEP）。PEP 本身不是犯罪，但因其職位使其面臨較高的腐敗與賄賂風險，因此須執行 EDD。PEP 身份在卸任後仍維持一定風險期。"
+  },
+  {
+    id:"f6",type:"fill",topic:"sanc",topicLabel:"OFAC Full Name",
+    en:"OFAC stands for the ______ ______ ______ ______, which is the primary U.S. sanctions enforcement agency within the Department of the Treasury.",
+    zh:"OFAC 全文為 ______ ______ ______ ______，是美國財政部下設的主要制裁執法機構。",
+    blanks:[
+      {label:"OFAC 全名",hint:"O__ F__ A__ C__",answers:["office of foreign assets control","the office of foreign assets control"],zh_ans:"Office of Foreign Assets Control（海外資產控制辦公室）",partial:false}
+    ],
+    exp:"OFAC（Office of Foreign Assets Control，海外資產控制辦公室）是美國財政部下設的制裁執法機構，負責管理和執行美國的對外制裁計劃。OFAC 維護的最重要名單是 SDN（Specially Designated Nationals）清單。根據「長臂管轄原則」，任何涉及美元清算或美國金融機構的交易均受 OFAC 管轄。"
+  },
+  {
+    id:"f7",type:"fill",topic:"rba",topicLabel:"RBA / EDD",
+    en:"Under a Risk-Based Approach, ______ Due Diligence (EDD) must be applied to higher-risk customers such as PEPs, customers from high-risk jurisdictions, and those with ______ ownership structures.",
+    zh:"在風險基礎方法下，______ 盡職調查（EDD）必須適用於高風險客戶，如 PEP、來自高風險地區的客戶，以及具有 ______ 所有權結構的客戶。",
+    blanks:[
+      {label:"Type of DD",hint:"首字母 E",answers:["enhanced","enhancement"],zh_ans:"Enhanced（強化的）",partial:false},
+      {label:"Structure type",hint:"C___ / Opaque / Complex",answers:["complex","complicated","opaque","complex corporate","offshore"],zh_ans:"Complex / Opaque（複雜的/不透明的）",partial:true}
+    ],
+    exp:"EDD（Enhanced Due Diligence，強化盡職調查）是 RBA 的核心工具。EDD 觸發條件包括：PEP 客戶、高風險地區客戶、複雜公司結構（多層控股、離岸架構、名義董事）、現金密集型業務、無法解釋的財富來源等。EDD 的核心要素：Source of Wealth（財富來源）+ Source of Funds（資金來源）+ 高層授權。"
+  },
+  {
+    id:"f8",type:"fill",topic:"stage",topicLabel:"Structuring / Smurfing",
+    en:"______ (also known as ______) is the practice of breaking up large sums of money into smaller transactions specifically to avoid triggering a Currency Transaction Report (CTR) at the $10,000 threshold.",
+    zh:"______ （又稱 ______）是將大筆資金拆分成較小的交易，刻意規避觸發金額 $10,000 門檻的現金交易申報（CTR）的做法。",
+    blanks:[
+      {label:"Official term",hint:"首字母 S",answers:["structuring"],zh_ans:"Structuring（結構化）",partial:false},
+      {label:"Slang term",hint:"首字母 S",answers:["smurfing"],zh_ans:"Smurfing（藍精靈操作）",partial:false}
+    ],
+    exp:"Structuring（結構化）是 AML 中最重要的 Placement 手法之一。在美國，Structuring 本身即為聯邦犯罪（31 USC § 5324），即使資金來源完全合法，只要有意圖規避 CTR 申報義務就違法。Smurfing 是指派多人（Smurfs）執行 Structuring 的組織性手法。"
+  },
+  {
+    id:"f9",type:"fill",topic:"crypto",topicLabel:"VASP / Travel Rule",
+    en:"Under FATF Recommendation 16, the ______ Rule requires Virtual Asset Service Providers (VASPs) to transmit originator and ______ information when transferring virtual assets above the applicable threshold.",
+    zh:"依據 FATF 第16條建議，______ 規則要求虛擬資產服務商（VASP）在超過門檻的虛擬資產轉帳中傳遞發起人與 ______ 資訊。",
+    blanks:[
+      {label:"Rule name",hint:"首字母 T",answers:["travel","the travel"],zh_ans:"Travel（旅行規則）",partial:false},
+      {label:"Other party",hint:"首字母 B",answers:["beneficiary","beneficiary's","recipient"],zh_ans:"Beneficiary（受益人）",partial:true}
+    ],
+    exp:"Travel Rule（旅行規則）原本適用於傳統電匯，FATF 在2019年將其擴展至虛擬資產領域。VASP 在超過門檻（FATF 建議 $1,000）的交易中，必須隨附發起人（Originator）與受益人（Beneficiary）的識別資訊，包括姓名、帳戶/錢包地址等。這是目前 Crypto AML 合規最重要的規則之一。"
+  },
+  {
+    id:"f10",type:"fill",topic:"sar",topicLabel:"Tipping Off",
+    en:"______ ______ refers to the illegal act of disclosing to a customer or subject that they are under investigation or that a Suspicious Activity Report has been filed against them.",
+    zh:"______ ______ 是指非法地向客戶或相關人員洩露其正受到調查，或已對其提交可疑活動申報（SAR）的行為。",
+    blanks:[
+      {label:"Term (2 words)",hint:"T___ O___",answers:["tipping off","tip off","tipping-off"],zh_ans:"Tipping Off（洩露申報）",partial:false}
+    ],
+    exp:"Tipping Off 是 AML 合規中最嚴重的違規行為之一。SAR 的保密性受法律嚴格保護——一旦申報，任何形式的洩露（包括間接暗示或非正式談話）均可能構成犯罪。美國 BSA 和英國《2002年收益罪行法》均有明確刑事罰則。Safe Harbor 保護則是指金融機構因善意申報 SAR 而享有的法律免責保護。"
+  }
+];
+
+// ══════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════
+let currentQuiz=[];
+let submitted=false;
+let currentErrorFilter='all';
+
+// ══════════════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════════════
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  const sideNav=document.getElementById('nav-'+id);
+  if(sideNav)sideNav.classList.add('active');
+  const tabBtn=document.getElementById('tab-'+id);
+  if(tabBtn)tabBtn.classList.add('active');
+  if(id==='errors')renderErrors();
+  if(id==='history')renderHistory();
+  // scroll to top on page switch (mobile UX)
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ══════════════════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════════════════
+function fmtDate(d){return d.toLocaleDateString('zh-TW',{year:'numeric',month:'2-digit',day:'2-digit',weekday:'short'})}
+function shuffleArray(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function normalizeAns(s){return s.trim().toLowerCase().replace(/[^a-z0-9\u4e00-\u9fff\s]/g,'')}
+
+function checkFillAnswer(userAns,blank){
+  const u=normalizeAns(userAns);
+  if(!u)return'empty';
+  for(const a of blank.answers){
+    const na=normalizeAns(a);
+    if(u===na)return'correct';
+  }
+  // partial: first letter match + substantial overlap
+  if(blank.partial){
+    const firstCorrect=normalizeAns(blank.answers[0]);
+    if(firstCorrect.length>0&&u[0]===firstCorrect[0]&&u.length>=Math.floor(firstCorrect.length*0.5)){
+      // check key substring
+      const shorter=u.length<firstCorrect.length?u:firstCorrect;
+      const longer=u.length>=firstCorrect.length?u:firstCorrect;
+      if(longer.includes(shorter)&&shorter.length>=3)return'partial';
+    }
+    // any answer that's a close match
+    for(const a of blank.answers){
+      const na=normalizeAns(a);
+      if(na.includes(u)&&u.length>=4)return'partial';
+      if(u.includes(na)&&na.length>=4)return'partial';
+    }
+  }
+  // Detect spelling error (Levenshtein ≤ 2)
+  for(const a of blank.answers){
+    const na=normalizeAns(a);
+    if(Math.abs(u.length-na.length)<=2&&levenshtein(u,na)<=2)return'spelling';
+  }
+  return'wrong';
+}
+
+function levenshtein(a,b){
+  const m=a.length,n=b.length;
+  const dp=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i===0?j:j===0?i:0));
+  for(let i=1;i<=m;i++)for(let j=1;j<=n;j++)dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
+  return dp[m][n];
+}
+
+function detectFillErrorType(result,userAns,blank){
+  if(result==='spelling')return'spelling';
+  const u=normalizeAns(userAns);
+  // check if it's an English problem (typed Chinese when English expected or vice versa)
+  const isEnglishExpected=normalizeAns(blank.answers[0]).match(/[a-z]/);
+  const userHasChinese=u.match(/[\u4e00-\u9fff]/);
+  if(isEnglishExpected&&userHasChinese)return'language';
+  if(result==='empty')return'empty';
+  return'concept';
+}
+
+// ══════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════
+function initDates(){
+  const ds=fmtDate(new Date());
+  ['learn-date','news-date','quiz-date'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=ds});
+}
+
+function renderStreak(){
+  const hist=getHistory();
+  let streak=0;
+  const sortedDates=[...new Set(hist.map(h=>new Date(h.date).toDateString()))].sort((a,b)=>new Date(b)-new Date(a));
+  for(let i=0;i<sortedDates.length;i++){
+    const d=new Date(sortedDates[i]),ex=new Date();ex.setDate(ex.getDate()-i);
+    if(d.toDateString()===ex.toDateString())streak++;else break;
+  }
+  document.getElementById('streak-label').textContent=`連續 ${streak} 天`;
+  const bar=document.getElementById('streak-bar');bar.innerHTML='';
+  for(let i=0;i<7;i++){const dot=document.createElement('div');dot.className='streak-dot'+(i<streak?' done':'');bar.appendChild(dot)}
+}
+
+// ══════════════════════════════════════════════════════
+// CONCEPTS
+// ══════════════════════════════════════════════════════
+function renderConcepts(){
+  const grid=document.getElementById('concept-grid');
+  const day=Math.floor((new Date()-new Date(new Date().getFullYear(),0,0))/86400000);
+  const idxs=[day%CONCEPTS.length,(day+1)%CONCEPTS.length,(day+2)%CONCEPTS.length];
+  grid.innerHTML='';
+  idxs.forEach(idx=>{
+    const c=CONCEPTS[idx];
+    const card=document.createElement('div');card.className='concept-card';
+    card.innerHTML=`<div class="concept-color-bar" style="background:${c.color}"></div>
+      <div class="concept-body">
+        <div class="concept-en-term" style="color:${c.color}">${c.en}</div>
+        <div class="concept-name">${c.name}</div>
+        <div class="concept-desc">${c.desc}</div>
+        <div class="concept-section-title">關鍵英文術語</div>
+        <div class="concept-keywords">${c.keywords.map(k=>`<span class="kw-chip">${k}</span>`).join('')}</div>
+        <div class="concept-section-title">🏦 銀行實例</div>
+        <div class="concept-example"><div class="ex-type">Bank</div>${c.bankEx}</div>
+        <div class="concept-section-title">₿ Crypto 實例</div>
+        <div class="concept-example" style="margin-top:8px"><div class="ex-type">Crypto</div>${c.cryptoEx}</div>
+      </div>`;
+    grid.appendChild(card);
+  });
+}
+
+// ══════════════════════════════════════════════════════
+// NEWS
+// ══════════════════════════════════════════════════════
+function renderNews(){
+  const container=document.getElementById('news-container');
+  const day=Math.floor((new Date()-new Date(new Date().getFullYear(),0,0))/86400000);
+  const items=[NEWS_ITEMS[day%NEWS_ITEMS.length],NEWS_ITEMS[(day+1)%NEWS_ITEMS.length]];
+  container.innerHTML='';
+  items.forEach(n=>{
+    const div=document.createElement('div');div.className='news-card';
+    div.innerHTML=`<div class="news-header"><span class="news-tag tag-${n.tag}">${n.tagLabel}</span><div><div class="news-title">${n.title}</div><div class="news-date">${n.date}</div></div></div>
+      <div class="news-body">
+        <div class="news-section"><div class="news-section-label">📌 事件摘要</div><p>${n.summary}</p></div>
+        <div class="news-section"><div class="news-section-label">⚠ AML 風險分析</div>${n.risks.map(r=>`<p style="padding-left:12px;border-left:2px solid #e2ddd6;margin-bottom:6px">• ${r}</p>`).join('')}</div>
+        <div class="news-section"><div class="news-section-label">👤 Analyst 應對方式</div><ul class="analyst-steps">${n.steps.map((s,i)=>`<li data-n="${i+1}.">${s}</li>`).join('')}</ul></div>
+      </div>`;
+    container.appendChild(div);
+  });
+}
+
+// ══════════════════════════════════════════════════════
+// QUIZ INIT
+// ══════════════════════════════════════════════════════
+function initQuiz(){
+  submitted=false;
+  const mcqs=shuffleArray(MCQ_BANK).slice(0,15);
+  const fills=shuffleArray(FILL_BANK).slice(0,5);
+  // interleave: 3 MCQ, 1 fill, 3 MCQ, 1 fill, ... then remaining MCQ
+  currentQuiz=[];
+  let mi=0,fi=0,pos=0;
+  while(mi<mcqs.length||fi<fills.length){
+    // insert a fill every 3 MCQs
+    if(mi<mcqs.length){currentQuiz.push(mcqs[mi++])}
+    if(mi<mcqs.length){currentQuiz.push(mcqs[mi++])}
+    if(mi<mcqs.length){currentQuiz.push(mcqs[mi++])}
+    if(fi<fills.length){currentQuiz.push(fills[fi++])}
+  }
+  currentQuiz=currentQuiz.slice(0,20);
+  renderQuiz();
+  document.getElementById('stat-answered').textContent='0';
+  document.getElementById('stat-score').textContent='—';
+  document.getElementById('quiz-progress').style.width='0%';
+  document.getElementById('result-banner').style.display='none';
+  document.getElementById('submit-btn').style.display='inline-flex';
+  document.getElementById('reset-btn').style.display='none';
+}
+
+// ══════════════════════════════════════════════════════
+// QUIZ RENDER
+// ══════════════════════════════════════════════════════
+const topicColors={kyc:'t-kyc',txn:'t-txn',sanc:'t-sanc',rba:'t-rba',sar:'t-sar',stage:'t-stage',crypto:'t-crypto'};
+
+function renderQuiz(){
+  const container=document.getElementById('quiz-container');
+  container.innerHTML='';
+  currentQuiz.forEach((q,idx)=>{
+    const card=document.createElement('div');
+    card.className='q-card';card.id=`qcard-${idx}`;
+    if(q.type==='mcq'){
+      const scenTag=q.scenario?`<span class="q-type-tag q-scenario-tag">情境題</span>`:'';
+      const optsHTML=q.opts.map((opt,oi)=>{
+        const key=['A','B','C','D'][oi];
+        return `<div class="opt-wrap" id="opt-${idx}-${key}">
+          <input type="radio" name="q${idx}" id="r${idx}${key}" value="${key}">
+          <label class="opt-label" for="r${idx}${key}">
+            <span class="opt-key">${key}</span><span class="opt-text">${opt}</span>
+          </label></div>`;
+      }).join('');
+      card.innerHTML=`
+        <div class="q-top">
+          <div class="q-num" id="qnum-${idx}">${idx+1}</div>
+          <div class="q-meta">
+            <div><span class="q-topic-tag ${topicColors[q.topic]||''}">${q.topicLabel}</span>${scenTag}</div>
+            <div class="q-en">${q.en}</div>
+            <div class="q-zh">${q.zh}</div>
+          </div>
+        </div>
+        <div class="q-options">${optsHTML}</div>
+        <div class="q-explanation" id="exp-${idx}"><div class="exp-head">📖 詳細解析</div>${q.exp}</div>`;
+    } else {
+      // FILL type
+      const blanksHTML=q.blanks.map((b,bi)=>`
+        <div class="blank-row">
+          <span class="blank-label">${b.label}</span>
+          <span class="blank-hint">${b.hint}</span>
+          <input class="blank-input" id="fill-${idx}-${bi}" type="text" placeholder="輸入答案..." autocomplete="off" spellcheck="false">
+          <div id="fill-result-${idx}-${bi}" class="fill-result-row" style="display:none"></div>
+        </div>`).join('');
+      card.innerHTML=`
+        <div class="q-top">
+          <div class="q-num" id="qnum-${idx}">${idx+1}</div>
+          <div class="q-meta">
+            <div><span class="q-topic-tag ${topicColors[q.topic]||''}">${q.topicLabel}</span><span class="q-type-tag q-fill-tag">填空題</span></div>
+            <div class="q-en">${q.en}</div>
+            <div class="q-zh">${q.zh}</div>
+          </div>
+        </div>
+        <div class="q-fill-area">
+          <div class="blank-group">${blanksHTML}</div>
+        </div>
+        <div class="q-explanation" id="exp-${idx}"><div class="exp-head">📖 詳細解析</div>${q.exp}</div>`;
+    }
+    container.appendChild(card);
+  });
+
+  // MCQ change listener
+  document.querySelectorAll('input[type="radio"]').forEach(r=>r.addEventListener('change',updateProgress));
+  // Fill input listener
+  document.querySelectorAll('.blank-input').forEach(inp=>inp.addEventListener('input',updateProgress));
+}
+
+// ══════════════════════════════════════════════════════
+// PROGRESS
+// ══════════════════════════════════════════════════════
+function updateProgress(){
+  let answered=0;
+  currentQuiz.forEach((q,idx)=>{
+    if(q.type==='mcq'){
+      if(document.querySelector(`input[name="q${idx}"]:checked`))answered++;
+    } else {
+      // fill: count as answered if all blanks have something
+      const allFilled=q.blanks.every((_,bi)=>{
+        const el=document.getElementById(`fill-${idx}-${bi}`);
+        return el&&el.value.trim().length>0;
+      });
+      if(allFilled)answered++;
+    }
+  });
+  document.getElementById('stat-answered').textContent=answered;
+  document.getElementById('quiz-progress').style.width=(answered/20*100)+'%';
+}
+
+// ══════════════════════════════════════════════════════
+// SUBMIT
+// ══════════════════════════════════════════════════════
+function submitQuiz(){
+  if(submitted)return;
+  // check all answered
+  let allAnswered=true;
+  currentQuiz.forEach((q,idx)=>{
+    if(q.type==='mcq'){
+      if(!document.querySelector(`input[name="q${idx}"]:checked`))allAnswered=false;
+    } else {
+      q.blanks.forEach((_,bi)=>{
+        const el=document.getElementById(`fill-${idx}-${bi}`);
+        if(!el||!el.value.trim())allAnswered=false;
+      });
+    }
+  });
+  if(!allAnswered){
+    const w=document.getElementById('warn-text');w.style.display='block';
+    setTimeout(()=>w.style.display='none',3000);return;
+  }
+  submitted=true;
+
+  let score=0,mcqScore=0,fillScore=0,fillTotal=0,mcqTotal=0;
+  const wrongQuestions=[];
+
+  currentQuiz.forEach((q,idx)=>{
+    const card=document.getElementById(`qcard-${idx}`);
+    const qnum=document.getElementById(`qnum-${idx}`);
+    const exp=document.getElementById(`exp-${idx}`);
+
+    if(q.type==='mcq'){
+      mcqTotal++;
+      const selected=document.querySelector(`input[name="q${idx}"]:checked`);
+      const userAns=selected?selected.value:null;
+      const isCorrect=userAns===q.correct;
+      if(isCorrect){score++;mcqScore++;}
+      else wrongQuestions.push({q,userAns,date:new Date().toISOString(),qtype:'mcq'});
+      card.classList.add(isCorrect?'answered-correct':'answered-wrong');
+      qnum.textContent=isCorrect?'✔':'✘';qnum.classList.add(isCorrect?'correct':'wrong');
+      ['A','B','C','D'].forEach(key=>{
+        const wrap=document.getElementById(`opt-${idx}-${key}`);if(!wrap)return;
+        if(key===q.correct)wrap.classList.add('show-correct');
+        else if(key===userAns&&!isCorrect)wrap.classList.add('show-wrong');
+      });
+      document.querySelectorAll(`input[name="q${idx}"]`).forEach(r=>r.disabled=true);
+      exp.classList.add('show',isCorrect?'correct-exp':'wrong-exp');
+    } else {
+      // fill
+      fillTotal++;
+      let blankCorrect=0,blankTotal=q.blanks.length;
+      const blankResults=[];
+      q.blanks.forEach((b,bi)=>{
+        const inp=document.getElementById(`fill-${idx}-${bi}`);
+        const userAns=inp?inp.value:'';
+        const result=checkFillAnswer(userAns,b);
+        const errorType=detectFillErrorType(result,userAns,b);
+        blankResults.push({userAns,result,errorType,blank:b});
+        inp.disabled=true;
+
+        if(result==='correct'){
+          blankCorrect++;inp.classList.add('fill-correct');
+        } else if(result==='partial'||result==='spelling'){
+          inp.classList.add('fill-partial');
+          blankCorrect+=0.5;
+        } else {
+          inp.classList.add('fill-wrong');
+        }
+
+        // show result row
+        const resRow=document.getElementById(`fill-result-${idx}-${bi}`);
+        resRow.style.display='flex';
+        let badges='';
+        if(result==='correct')badges+=`<span class="fill-badge fb-correct">✔ 正確</span>`;
+        else if(result==='partial')badges+=`<span class="fill-badge fb-partial">△ 部分正確</span>`;
+        else if(result==='spelling')badges+=`<span class="fill-badge fb-partial">△ 拼寫錯誤</span>`;
+        else badges+=`<span class="fill-badge fb-wrong">✘ 錯誤</span>`;
+        badges+=`<span class="fill-badge fb-answer">正確答案: ${b.zh_ans}</span>`;
+        if(result!=='correct'){
+          const et=errorType==='spelling'?'拼寫錯誤':errorType==='language'?'英文術語不熟':errorType==='empty'?'未填寫':'概念不熟';
+          badges+=`<span class="error-type-badge">錯誤原因: ${et}</span>`;
+        }
+        resRow.innerHTML=badges;
+      });
+
+      const allCorrect=blankCorrect===blankTotal;
+      const allWrong=blankCorrect===0;
+      if(blankCorrect>=blankTotal){score++;fillScore++;}
+      else if(blankCorrect>0){score+=0.5;fillScore+=0.5;}
+
+      card.classList.add(allCorrect?'answered-correct':'answered-wrong');
+      qnum.textContent=allCorrect?'✔':'✘';
+      qnum.classList.add(allCorrect?'correct':'wrong');
+      exp.classList.add('show');
+      if(allCorrect)exp.classList.add('correct-exp');
+      else if(blankCorrect>0)exp.classList.add('partial-exp');
+      else exp.classList.add('wrong-exp');
+
+      // save to errors if not all correct
+      if(!allCorrect){
+        wrongQuestions.push({q,blankResults,date:new Date().toISOString(),qtype:'fill'});
+      }
+    }
+  });
+
+  const total=Math.round(score);
+  const pct=score/20;
+  let grade=pct>=0.9?'🏆 優秀 — CAMS 通過水準':pct>=0.7?'✅ 良好 — 繼續加強':pct>=0.5?'⚠ 及格邊緣 — 複習弱點':'❌ 需加強 — 重新複習核心概念';
+  document.getElementById('result-score-big').innerHTML=`${total}<span>/20</span>`;
+  document.getElementById('result-detail').innerHTML=`
+    <div class="result-detail-item">選擇題 <strong>${mcqScore}/${mcqTotal}</strong></div>
+    <div class="result-detail-item">填空題 <strong>${Math.round(fillScore*2)/2}/${fillTotal}</strong></div>`;
+  document.getElementById('result-grade-badge').textContent=grade;
+  document.getElementById('result-banner').style.display='block';
+  document.getElementById('stat-score').textContent=`${total}/20`;
+  document.getElementById('submit-btn').style.display='none';
+  document.getElementById('reset-btn').style.display='inline-flex';
+  document.getElementById('quiz-progress').style.width='100%';
+
+  saveErrors(wrongQuestions);
+  saveHistory(total,mcqScore,Math.round(fillScore*2)/2);
+  renderStreak();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function resetQuiz(){initQuiz();window.scrollTo({top:0,behavior:'smooth'})}
+
+// ══════════════════════════════════════════════════════
+// ERRORS
+// ══════════════════════════════════════════════════════
+function getErrors(){try{return JSON.parse(localStorage.getItem('aml_errors_v2')||'[]')}catch(e){return[]}}
+function saveErrors(newErrors){
+  const ex=getErrors();
+  localStorage.setItem('aml_errors_v2',JSON.stringify([...ex,...newErrors].slice(-120)));
+}
+function clearErrors(){
+  if(confirm('確定要清除所有錯題記錄嗎？')){localStorage.removeItem('aml_errors_v2');renderErrors()}
+}
+function filterErrors(type,el){
+  currentErrorFilter=type;
+  document.querySelectorAll('.etab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderErrors();
+}
+function renderErrors(){
+  const errors=getErrors();
+  const container=document.getElementById('errors-container');
+  let filtered=errors.filter(e=>currentErrorFilter==='all'?true:e.qtype===currentErrorFilter);
+  if(filtered.length===0){
+    container.innerHTML=`<div class="empty-state"><div class="empty-icon">🎉</div><div class="empty-text">${currentErrorFilter==='all'?'目前沒有錯題記錄！':currentErrorFilter==='mcq'?'沒有選擇題錯題！':'沒有填空題錯題！'}</div></div>`;
+    return;
+  }
+  container.innerHTML='';
+  [...filtered].reverse().forEach(err=>{
+    const div=document.createElement('div');
+    const d=err.date?new Date(err.date).toLocaleDateString('zh-TW'):'';
+    if(err.qtype==='mcq'){
+      div.className='error-item mcq-err';
+      const userKey=['A','B','C','D'].indexOf(err.userAns);
+      const userText=userKey>=0?err.q.opts[userKey]:'未作答';
+      const correctKey=['A','B','C','D'].indexOf(err.q.correct);
+      const correctText=correctKey>=0?err.q.opts[correctKey]:'';
+      div.innerHTML=`
+        <div class="error-date">${d}<span class="ans-chip ans-wrong">選擇題</span><span style="font-family:var(--mono);font-size:10px;color:var(--ink3)">${err.q.topicLabel}</span></div>
+        <div class="error-q"><strong>EN:</strong> ${err.q.en}<br><strong>中:</strong> ${err.q.zh}</div>
+        <div class="error-ans-row">
+          <span class="ans-chip ans-wrong">你的答案: ${err.userAns||'—'} — ${userText.substring(0,45)}...</span>
+          <span class="ans-chip ans-correct">正確答案: ${err.q.correct} — ${correctText.substring(0,45)}...</span>
+        </div>
+        <div class="error-exp">📖 ${err.q.exp}</div>`;
+    } else {
+      // fill error
+      div.className='error-item fill-err';
+      const blankDetails=err.blankResults.map((br,i)=>{
+        const et=br.errorType==='spelling'?'拼寫錯誤':br.errorType==='language'?'英文術語不熟':br.errorType==='empty'?'未填寫':'概念不熟';
+        const rc=br.result==='correct'?'ans-correct':br.result==='partial'||br.result==='spelling'?'ans-partial':'ans-wrong';
+        return `<div style="margin-bottom:6px">
+          <span style="font-family:var(--mono);font-size:10px;color:var(--ink3)">${br.blank.label}：</span>
+          <span class="ans-chip ${rc}">你的答案: ${br.userAns||'（空白）'}</span>
+          <span class="ans-chip ans-correct">正確: ${br.blank.zh_ans}</span>
+          ${br.result!=='correct'?`<span class="error-type-badge">原因: ${et}</span>`:''}
+        </div>`;
+      }).join('');
+      div.innerHTML=`
+        <div class="error-date">${d}<span class="ans-chip" style="background:var(--purple-light);color:var(--purple)">填空題</span><span style="font-family:var(--mono);font-size:10px;color:var(--ink3)">${err.q.topicLabel}</span></div>
+        <div class="error-q"><strong>EN:</strong> ${err.q.en}<br><strong>中:</strong> ${err.q.zh}</div>
+        <div style="margin-bottom:8px">${blankDetails}</div>
+        <div class="error-exp">📖 ${err.q.exp}</div>`;
+    }
+    container.appendChild(div);
+  });
+}
+
+// ══════════════════════════════════════════════════════
+// HISTORY
+// ══════════════════════════════════════════════════════
+function getHistory(){try{return JSON.parse(localStorage.getItem('aml_history_v2')||'[]')}catch(e){return[]}}
+function saveHistory(score,mcqScore,fillScore){
+  const hist=getHistory();
+  hist.push({date:new Date().toISOString(),score,total:20,mcqScore,fillScore});
+  localStorage.setItem('aml_history_v2',JSON.stringify(hist));
+}
+function clearHistory(){
+  if(confirm('確定要清除所有學習紀錄嗎？')){localStorage.removeItem('aml_history_v2');renderHistory()}
+}
+function renderHistory(){
+  const hist=getHistory();
+  const tbody=document.getElementById('history-tbody');
+  const emptyEl=document.getElementById('history-empty');
+  const statsEl=document.getElementById('history-stats');
+  if(hist.length===0){tbody.innerHTML='';emptyEl.style.display='block';statsEl.innerHTML='';return}
+  emptyEl.style.display='none';
+  const avg=Math.round(hist.reduce((s,h)=>s+h.score,0)/hist.length*10)/10;
+  const best=Math.max(...hist.map(h=>h.score));
+  statsEl.innerHTML=`
+    <div class="stat-card"><div class="stat-num">${hist.length}</div><div class="stat-label">作答次數</div></div>
+    <div class="stat-card"><div class="stat-num">${avg}/20</div><div class="stat-label">平均分數</div></div>
+    <div class="stat-card"><div class="stat-num">${best}/20</div><div class="stat-label">最高分數</div></div>
+    <div class="stat-card"><div class="stat-num">${Math.round(avg/20*100)}%</div><div class="stat-label">平均正確率</div></div>`;
+  tbody.innerHTML='';
+  [...hist].reverse().forEach(h=>{
+    const pct=Math.round(h.score/h.total*100);
+    const cls=pct>=80?'score-high':pct>=60?'score-mid':'score-low';
+    const grade=pct>=90?'優秀':pct>=70?'良好':pct>=50?'及格':'待加強';
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${new Date(h.date).toLocaleDateString('zh-TW')}</td>
+      <td><span class="score-pill ${cls}">${h.score} / ${h.total}</span></td>
+      <td>${pct}%</td>
+      <td>${h.mcqScore!==undefined?h.mcqScore+'/15':'—'}</td>
+      <td>${h.fillScore!==undefined?h.fillScore+'/5':'—'}</td>
+      <td>${grade}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// ══════════════════════════════════════════════════════
+// BOOT
+// ══════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded',()=>{
+  initDates();renderConcepts();renderNews();initQuiz();renderStreak();
+
+  // ── PWA: show "Add to Home Screen" tip on mobile Safari ──
+  const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isStandalone=('standalone' in navigator)&&navigator.standalone;
+  const tipped=localStorage.getItem('aml_pwa_tipped');
+  if(isIOS&&!isStandalone&&!tipped){
+    setTimeout(()=>{
+      const tip=document.createElement('div');
+      tip.id='pwa-tip';
+      tip.innerHTML=`<div style="position:fixed;bottom:76px;left:50%;transform:translateX(-50%);width:calc(100% - 28px);max-width:420px;background:#1a1814;color:#fff;border-radius:12px;padding:14px 16px 12px;z-index:9999;font-family:'Syne',sans-serif;font-size:13px;line-height:1.55;border:1px solid rgba(255,255,255,0.12);box-shadow:0 8px 32px rgba(0,0,0,0.5)">
+        <div style="font-weight:600;margin-bottom:4px">📲 加入主畫面，像 App 一樣使用</div>
+        <div style="color:rgba(255,255,255,0.65);font-size:12px">點 Safari 底部的 <strong style="color:#fff">分享</strong> 按鈕 → 選「<strong style="color:#fff">加入主畫面</strong>」</div>
+        <div style="text-align:right;margin-top:10px"><button onclick="document.getElementById('pwa-tip').remove();localStorage.setItem('aml_pwa_tipped','1')" style="background:rgba(255,255,255,0.1);border:none;color:#fff;font-family:'Syne',sans-serif;font-size:12px;padding:5px 14px;border-radius:6px;cursor:pointer">知道了</button></div>
+      </div>`;
+      document.body.appendChild(tip);
+    },2000);
+  }
+});
+</script>
+</body>
+</html>
