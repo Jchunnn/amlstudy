@@ -391,9 +391,6 @@ input[type="radio"]:checked+.opt-label .opt-text{color:var(--ink)}
   .main{padding-top:calc(16px + env(safe-area-inset-top,0px))}
 }
 </style>
-  <!-- Firebase Compat SDK -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
 <div class="app-shell">
@@ -667,7 +664,7 @@ input[type="radio"]:checked+.opt-label .opt-text{color:var(--ink)}
 <script>
 
 // ══════════════════════════════════════════════════════
-// FIREBASE — cloud sync (compat SDK)
+// FIREBASE — cloud sync (loads async, never blocks UI)
 // ══════════════════════════════════════════════════════
 let DEVICE_ID = localStorage.getItem('aml_device_id');
 if (!DEVICE_ID) {
@@ -675,9 +672,27 @@ if (!DEVICE_ID) {
   localStorage.setItem('aml_device_id', DEVICE_ID);
 }
 let _db = null;
+function loadFirebaseScripts(){
+  return new Promise((resolve)=>{
+    if(typeof firebase!=='undefined'){resolve(true);return;}
+    let loaded=0;
+    const done=()=>{if(++loaded===2)resolve(true);};
+    const err=()=>resolve(false);
+    const s1=document.createElement('script');
+    s1.src='https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js';
+    s1.onload=done;s1.onerror=err;
+    const s2=document.createElement('script');
+    s2.src='https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js';
+    s2.onload=done;s2.onerror=err;
+    document.head.appendChild(s1);document.head.appendChild(s2);
+    setTimeout(()=>resolve(false),5000); // 5s timeout
+  });
+}
 function initFirebaseSDK(){
   if(_db)return Promise.resolve(true);
-  return new Promise(resolve=>{
+  return new Promise(async resolve=>{
+    const loaded=await loadFirebaseScripts();
+    if(!loaded){resolve(false);return;}
     if(typeof firebase!=='undefined'){
       try{
         if(!firebase.apps.length){firebase.initializeApp({apiKey:"AIzaSyA7dKa4WI8vcfdckOTpB-Rajrvl8vwZA5w",authDomain:"aml-study.firebaseapp.com",projectId:"aml-study",storageBucket:"aml-study.firebasestorage.app",messagingSenderId:"475906705561",appId:"1:475906705561:web:3c2ad32eb8225407fc1008"});}
@@ -1647,1186 +1662,235 @@ const LIBRARY = [
   // ── KYC / CDD / EDD ──
   {term:"KYC（了解您的客戶）",en:"Know Your Customer (KYC)",topic:"kyc",
    desc:"金融機構在建立業務關係前，必須確認客戶身份、業務性質和資金來源的程序。",
-   detail:"KYC 是所有 AML 工作的起點，包含三個核心問題：(1) 這個人是誰？(2) 從事什麼業務？(3) 錢從哪裡來？
-
-銀行實例：開戶需提供護照、地址證明、UBO（持股25%以上的實益擁有人）。
-Crypto 實例：交易所要求上傳護照自拍（活體檢測），並對大額用戶執行 Source of Funds 調查。
-
-🎯 CAMS 考點：KYC 是入門必考，理解與 CDD/EDD 的關係最重要。"},
+   detail:"KYC 是所有 AML 工作的起點，包含三個核心問題：(1) 這個人是誰？(2) 從事什麼業務？(3) 錢從哪裡來？\n\n銀行實例：開戶需提供護照、地址證明、UBO（持股25%以上的實益擁有人）。\nCrypto 實例：交易所要求上傳護照自拍（活體檢測），並對大額用戶執行 Source of Funds 調查。\n\n🎯 CAMS 考點：KYC 是入門必考，理解與 CDD/EDD 的關係最重要。"},
   {term:"CDD（客戶盡職調查）",en:"Customer Due Diligence (CDD)",topic:"kyc",
    desc:"KYC 的執行過程，分三個層次：SDD（低風險）、Standard CDD（一般）、EDD（高風險）。",
-   detail:"CDD 的三個層次：
-• SDD（Simplified DD）：低風險客戶，簡化程序
-• Standard CDD：一般客戶，標準程序
-• EDD（Enhanced DD）：高風險客戶，強化程序
-
-觸發 CDD 的情境（FATF 第10條）：建立業務關係、偶發超門檻交易、懷疑 ML/TF、對既有資訊有疑問。
-
-🎯 CAMS 考點：CDD 觸發條件和三個層次的區別是高頻考題。"},
+   detail:"CDD 的三個層次：\n• SDD（Simplified DD）：低風險客戶，簡化程序\n• Standard CDD：一般客戶，標準程序\n• EDD（Enhanced DD）：高風險客戶，強化程序\n\n觸發 CDD 的情境（FATF 第10條）：建立業務關係、偶發超門檻交易、懷疑 ML/TF、對既有資訊有疑問。\n\n🎯 CAMS 考點：CDD 觸發條件和三個層次的區別是高頻考題。"},
   {term:"EDD（強化盡職調查）",en:"Enhanced Due Diligence (EDD)",topic:"kyc",
    desc:"針對高風險客戶的加強版盡職調查，必須包含 Source of Wealth 和 Source of Funds 調查，並取得高層管理授權。",
-   detail:"EDD 觸發條件：
-• PEP（政治公眾人物）
-• 高風險或 FATF 灰名單/黑名單國家的客戶
-• 複雜公司結構（多層離岸控股）
-• 現金密集型業務
-• 無法解釋的財富來源
-
-EDD 核心要素：
-• Source of Wealth（SoW）：整體財富如何積累？
-• Source of Funds（SoF）：本次特定資金從哪來？
-• Senior Management Approval：高層批准
-
-🎯 CAMS 考點：SoW vs SoF 的區別是常見陷阱題。"},
+   detail:"EDD 觸發條件：\n• PEP（政治公眾人物）\n• 高風險或 FATF 灰名單/黑名單國家的客戶\n• 複雜公司結構（多層離岸控股）\n• 現金密集型業務\n• 無法解釋的財富來源\n\nEDD 核心要素：\n• Source of Wealth（SoW）：整體財富如何積累？\n• Source of Funds（SoF）：本次特定資金從哪來？\n• Senior Management Approval：高層批准\n\n🎯 CAMS 考點：SoW vs SoF 的區別是常見陷阱題。"},
   {term:"PEP（政治公眾人物）",en:"Politically Exposed Person (PEP)",topic:"kyc",
    desc:"擔任或曾擔任重要公職的個人，因職位使其面臨較高的腐敗與賄賂風險，須執行 EDD。",
-   detail:"PEP 分三類：
-• 外國 PEP（Foreign PEP）：風險最高，如外國元首、部長
-• 國內 PEP（Domestic PEP）：本國政府官員
-• 國際組織 PEP（IO PEP）：如聯合國、世界銀行高級官員
-
-重要原則：
-• PEP 本身不是犯罪，不應自動拒絕
-• 卸任後仍須維持風險評估期（通常建議12個月以上）
-• 家庭成員和親密夥伴也屬高風險
-
-🎯 CAMS 考點：PEP 卸任後的處理方式是常見考題。"},
+   detail:"PEP 分三類：\n• 外國 PEP（Foreign PEP）：風險最高，如外國元首、部長\n• 國內 PEP（Domestic PEP）：本國政府官員\n• 國際組織 PEP（IO PEP）：如聯合國、世界銀行高級官員\n\n重要原則：\n• PEP 本身不是犯罪，不應自動拒絕\n• 卸任後仍須維持風險評估期（通常建議12個月以上）\n• 家庭成員和親密夥伴也屬高風險\n\n🎯 CAMS 考點：PEP 卸任後的處理方式是常見考題。"},
   {term:"UBO（最終實益擁有人）",en:"Ultimate Beneficial Owner (UBO)",topic:"kyc",
    desc:"對公司有最終所有權或控制權的自然人，通常為持股25%以上的個人。金融機構必須識別並核實 UBO。",
-   detail:"UBO 識別方法：穿透識別（Look-Through Approach）
-從最頂層結構開始，逐層追蹤，直到找到最終控制的自然人。
-
-高風險 UBO 指標：
-• BVI、開曼群島、塞席爾等離岸結構
-• 名義董事（Nominee Directors）
-• 無記名股票（Bearer Shares）
-• 多層控股架構
-
-若無法取得 UBO 資訊：這是拒絕建立業務關係的正當理由。
-
-🎯 CAMS 考點：FATF 第24條、FinCEN 25% 門檻規則。"},
+   detail:"UBO 識別方法：穿透識別（Look-Through Approach）\n從最頂層結構開始，逐層追蹤，直到找到最終控制的自然人。\n\n高風險 UBO 指標：\n• BVI、開曼群島、塞席爾等離岸結構\n• 名義董事（Nominee Directors）\n• 無記名股票（Bearer Shares）\n• 多層控股架構\n\n若無法取得 UBO 資訊：這是拒絕建立業務關係的正當理由。\n\n🎯 CAMS 考點：FATF 第24條、FinCEN 25% 門檻規則。"},
   {term:"SDD（簡化盡職調查）",en:"Simplified Due Diligence (SDD)",topic:"kyc",
    desc:"適用於低風險客戶的簡化 CDD 程序。SDD 是簡化而非免除，仍須滿足基本識別要求。",
-   detail:"SDD 適用的典型情境：
-• 受監管交易所的上市公司
-• 政府機構或公共部門
-• 低風險地區的標準受薪員工
-
-特別注意：
-• SDD ≠ 零盡調，只是簡化流程
-• RBA 下，機構自行判斷是否適用 SDD
-• FATF 第10條建議明確列出允許 SDD 的情境
-
-🎯 CAMS 考點：SDD vs EDD 的適用情境對比題。"},
+   detail:"SDD 適用的典型情境：\n• 受監管交易所的上市公司\n• 政府機構或公共部門\n• 低風險地區的標準受薪員工\n\n特別注意：\n• SDD ≠ 零盡調，只是簡化流程\n• RBA 下，機構自行判斷是否適用 SDD\n• FATF 第10條建議明確列出允許 SDD 的情境\n\n🎯 CAMS 考點：SDD vs EDD 的適用情境對比題。"},
   {term:"Ongoing CDD（持續盡職調查）",en:"Ongoing Customer Due Diligence",topic:"kyc",
    desc:"在整個業務關係存續期間，持續監控客戶交易行為並定期更新 CDD 資訊的程序。",
-   detail:"觸發 CDD 更新的情境（Trigger Events）：
-• 交易模式出現重大變化
-• 客戶業務性質改變
-• 新的高風險對手方出現
-• 帳戶長期無活動後突然活躍
-• 媒體或監管機構的負面訊息
-
-複核頻率：
-• 高風險客戶：建議每年複核
-• 中風險：每2-3年
-• 低風險：每3-5年
-
-🎯 CAMS 考點：「歷史良好記錄不能替代對新風險的評估」是核心原則。"},
+   detail:"觸發 CDD 更新的情境（Trigger Events）：\n• 交易模式出現重大變化\n• 客戶業務性質改變\n• 新的高風險對手方出現\n• 帳戶長期無活動後突然活躍\n• 媒體或監管機構的負面訊息\n\n複核頻率：\n• 高風險客戶：建議每年複核\n• 中風險：每2-3年\n• 低風險：每3-5年\n\n🎯 CAMS 考點：「歷史良好記錄不能替代對新風險的評估」是核心原則。"},
   {term:"CIP（客戶識別計劃）",en:"Customer Identification Program (CIP)",topic:"kyc",
    desc:"美國 BSA 要求的客戶識別計劃，規定開戶時必須收集的最低資訊：姓名、出生日期、地址、身份號碼。",
-   detail:"CIP 四要素（DANI 規則）：
-• D - Date of Birth（出生日期）
-• A - Address（地址）
-• N - Name（姓名）
-• I - Identification Number（身份號碼：社安號、護照號等）
-
-適用範圍：所有在美國開立帳戶的金融機構
-法規依據：31 CFR 1020.220
-
-🎯 CAMS 考點：CIP 是 KYC 的基礎，考試常考四個要素的記憶。"},
+   detail:"CIP 四要素（DANI 規則）：\n• D - Date of Birth（出生日期）\n• A - Address（地址）\n• N - Name（姓名）\n• I - Identification Number（身份號碼：社安號、護照號等）\n\n適用範圍：所有在美國開立帳戶的金融機構\n法規依據：31 CFR 1020.220\n\n🎯 CAMS 考點：CIP 是 KYC 的基礎，考試常考四個要素的記憶。"},
   {term:"Source of Wealth vs Source of Funds",en:"SoW vs SoF",topic:"kyc",
    desc:"SoW（財富來源）指客戶整體財富如何積累；SoF（資金來源）指本次特定交易中的資金從哪裡來。兩者不同，EDD 中都需要調查。",
-   detail:"實例說明：
-客戶要存入 $500 萬
-• SoW：「我在2018年出售科技公司獲得 $2,000 萬」
-• SoF：「這 $500 萬是從 HSBC 帳戶轉來的，是公司出售所得的一部分」
-
-驗證方式：
-• SoW：公司出售協議、股權轉讓文件、薪資記錄、遺產繼承文件
-• SoF：銀行對帳單、匯款記錄、交易確認書
-
-🎯 CAMS 考點：這兩個概念混淆是最常見的考試錯誤之一。"},
+   detail:"實例說明：\n客戶要存入 $500 萬\n• SoW：「我在2018年出售科技公司獲得 $2,000 萬」\n• SoF：「這 $500 萬是從 HSBC 帳戶轉來的，是公司出售所得的一部分」\n\n驗證方式：\n• SoW：公司出售協議、股權轉讓文件、薪資記錄、遺產繼承文件\n• SoF：銀行對帳單、匯款記錄、交易確認書\n\n🎯 CAMS 考點：這兩個概念混淆是最常見的考試錯誤之一。"},
   {term:"Beneficial Ownership Rule",en:"FinCEN Beneficial Ownership Rule",topic:"kyc",
    desc:"FinCEN 要求金融機構識別法人客戶中持股25%以上的實益擁有人，以及至少一名控制人（Control Person）。",
-   detail:"兩類必須識別的人：
-• 所有者（Ownership Prong）：持股25%以上的自然人
-• 控制人（Control Prong）：對公司有重大控制權的人，如 CEO，無論持股比例
-
-2024年升級：美國《公司透明度法》（CTA）要求公司直接向 FinCEN 申報 UBO，建立中央 UBO 資料庫。
-
-🎯 CAMS 考點：即使無人持股超過25%，仍必須識別至少一名控制人。"},
+   detail:"兩類必須識別的人：\n• 所有者（Ownership Prong）：持股25%以上的自然人\n• 控制人（Control Prong）：對公司有重大控制權的人，如 CEO，無論持股比例\n\n2024年升級：美國《公司透明度法》（CTA）要求公司直接向 FinCEN 申報 UBO，建立中央 UBO 資料庫。\n\n🎯 CAMS 考點：即使無人持股超過25%，仍必須識別至少一名控制人。"},
   // ── SAR / CTR ──
   {term:"SAR（可疑活動申報）",en:"Suspicious Activity Report (SAR)",topic:"sar",
    desc:"金融機構發現疑似洗錢或金融犯罪行為時，向主管機關（美國：FinCEN）提交的申報文件。",
-   detail:"SAR 申報門檻（美國銀行）：
-• $5,000 以上 + 能識別嫌疑人
-• $25,000 以上 + 無法識別嫌疑人
-• 無金額門檻：電腦入侵、恐怖融資
-
-申報時限：
-• 標準：30個日曆天
-• 需要識別嫌疑人：最多60天
-
-SAR 申報對象：FinCEN（美國）、JFIU（香港）、AMLJC（台灣）
-
-核心原則：申報後絕對不能告知客戶（Tipping Off 禁令）
-
-🎯 CAMS 考點：30/60天時限、金額門檻、Tipping Off 是必考三要素。"},
+   detail:"SAR 申報門檻（美國銀行）：\n• $5,000 以上 + 能識別嫌疑人\n• $25,000 以上 + 無法識別嫌疑人\n• 無金額門檻：電腦入侵、恐怖融資\n\n申報時限：\n• 標準：30個日曆天\n• 需要識別嫌疑人：最多60天\n\nSAR 申報對象：FinCEN（美國）、JFIU（香港）、AMLJC（台灣）\n\n核心原則：申報後絕對不能告知客戶（Tipping Off 禁令）\n\n🎯 CAMS 考點：30/60天時限、金額門檻、Tipping Off 是必考三要素。"},
   {term:"Tipping Off（洩露申報）",en:"Tipping Off",topic:"sar",
    desc:"申報 SAR 後，任何形式地向客戶或相關人員洩露調查或申報存在的行為，是嚴重犯罪。",
-   detail:"Tipping Off 的形式：
-• 直接告知：「我們已對你提交了 SAR」
-• 間接暗示：「合規部門在看你的帳戶」
-• 詢問客戶：「你最近的交易看起來有點問題，能解釋一下嗎？」
-• 關閉帳戶時的說明不當
-
-法律後果：
-• 美國 BSA：刑事責任
-• 英國《2002年收益罪行法》：最高5年監禁
-
-「既不確認也不否認」原則：即使在法院傳票下，也不得確認 SAR 的存在。
-
-🎯 CAMS 考點：Tipping Off 的間接形式（如間接暗示）也構成違規。"},
+   detail:"Tipping Off 的形式：\n• 直接告知：「我們已對你提交了 SAR」\n• 間接暗示：「合規部門在看你的帳戶」\n• 詢問客戶：「你最近的交易看起來有點問題，能解釋一下嗎？」\n• 關閉帳戶時的說明不當\n\n法律後果：\n• 美國 BSA：刑事責任\n• 英國《2002年收益罪行法》：最高5年監禁\n\n「既不確認也不否認」原則：即使在法院傳票下，也不得確認 SAR 的存在。\n\n🎯 CAMS 考點：Tipping Off 的間接形式（如間接暗示）也構成違規。"},
   {term:"Safe Harbor（安全港保護）",en:"Safe Harbor Protection",topic:"sar",
    desc:"金融機構因善意申報 SAR，即使後來證明懷疑不成立，也不會被申報對象提起民事或刑事訴訟。",
-   detail:"Safe Harbor 的重要意義：
-• 鼓勵機構積極申報，不必擔心被客戶反告
-• 即使 SAR 後來被證明是誤報，申報者仍受保護
-• 前提條件：必須是善意（Good Faith）申報，非惡意誹謗
-
-不受 Safe Harbor 保護的情況：
-• 惡意或欺詐性申報
-• 違反保密義務（Tipping Off）
-
-🎯 CAMS 考點：Safe Harbor 保護的前提條件（善意）和範圍。"},
+   detail:"Safe Harbor 的重要意義：\n• 鼓勵機構積極申報，不必擔心被客戶反告\n• 即使 SAR 後來被證明是誤報，申報者仍受保護\n• 前提條件：必須是善意（Good Faith）申報，非惡意誹謗\n\n不受 Safe Harbor 保護的情況：\n• 惡意或欺詐性申報\n• 違反保密義務（Tipping Off）\n\n🎯 CAMS 考點：Safe Harbor 保護的前提條件（善意）和範圍。"},
   {term:"CTR（現金交易申報）",en:"Currency Transaction Report (CTR)",topic:"sar",
    desc:"美國 BSA 要求：任何超過 $10,000 的現金交易，無論是否可疑，都必須向 FinCEN 提交 CTR。",
-   detail:"CTR vs SAR 關鍵區別：
-• CTR：客觀要求，超過 $10,000 現金就申報，無論是否可疑
-• SAR：主觀判斷，認為可疑時申報，無固定金額（有最低門檻）
-
-CTR 豁免：
-• 銀行等金融機構
-• 政府機關
-• 已建立豁免名單的常規現金業務客戶
-
-Structuring 的問題：刻意拆分交易低於 $10,000 以規避 CTR = 聯邦犯罪
-
-🎯 CAMS 考點：CTR 和 SAR 是考試中最常被混淆的兩個申報。"},
+   detail:"CTR vs SAR 關鍵區別：\n• CTR：客觀要求，超過 $10,000 現金就申報，無論是否可疑\n• SAR：主觀判斷，認為可疑時申報，無固定金額（有最低門檻）\n\nCTR 豁免：\n• 銀行等金融機構\n• 政府機關\n• 已建立豁免名單的常規現金業務客戶\n\nStructuring 的問題：刻意拆分交易低於 $10,000 以規避 CTR = 聯邦犯罪\n\n🎯 CAMS 考點：CTR 和 SAR 是考試中最常被混淆的兩個申報。"},
   {term:"SAR Quality（SAR 品質）",en:"SAR Narrative Quality",topic:"sar",
    desc:"高品質 SAR 敘述應遵循 5W1H 原則，包含具體可操作的情報，不應包含法律結論。",
-   detail:"5W1H 原則：
-• Who（誰）：涉案人員、帳戶、公司
-• What（什麼）：可疑活動的具體內容
-• When（何時）：交易日期、時間範圍
-• Where（哪裡）：地點、分行、國家
-• Why（為何可疑）：具體紅旗指標
-• How（如何操作）：交易方式、模式
-
-應包含：
-✓ 具體金額、帳號、日期
-✓ 客戶提供的解釋及其可信度評估
-✓ 與正常行為的偏差
-
-不應包含：
-✗ 法律結論（如「此人從事販毒」）
-✗ 推測性言論
-
-🎯 CAMS 考點：SAR 不包含法律結論，只陳述事實。"},
+   detail:"5W1H 原則：\n• Who（誰）：涉案人員、帳戶、公司\n• What（什麼）：可疑活動的具體內容\n• When（何時）：交易日期、時間範圍\n• Where（哪裡）：地點、分行、國家\n• Why（為何可疑）：具體紅旗指標\n• How（如何操作）：交易方式、模式\n\n應包含：\n✓ 具體金額、帳號、日期\n✓ 客戶提供的解釋及其可信度評估\n✓ 與正常行為的偏差\n\n不應包含：\n✗ 法律結論（如「此人從事販毒」）\n✗ 推測性言論\n\n🎯 CAMS 考點：SAR 不包含法律結論，只陳述事實。"},
   // ── 洗錢三階段 ──
   {term:"洗錢三階段",en:"Three Stages of Money Laundering",topic:"stage",
    desc:"洗錢分為：Placement（放置）→ Layering（分層）→ Integration（整合）三個階段。",
-   detail:"三階段詳解：
-
-1️⃣ Placement（放置）
-將犯罪所得現金引入金融體系，是最危險的階段（最容易被發現）。
-常見手法：現金存款、前台業務混合、Smurfing
-
-2️⃣ Layering（分層）
-透過複雜交易掩蓋資金來源，切斷犯罪所得與犯罪活動的聯繫。
-常見手法：跨境電匯、買賣資產、加密貨幣兌換
-
-3️⃣ Integration（整合）
-使洗白的資金以合法面貌回歸經濟體系。
-常見手法：購買不動產、投資合法企業、Loan-Back Scheme
-
-🎯 CAMS 考點：辨識情境屬於哪個階段 + 具體手法是高頻考題。"},
+   detail:"三階段詳解：\n\n1️⃣ Placement（放置）\n將犯罪所得現金引入金融體系，是最危險的階段（最容易被發現）。\n常見手法：現金存款、前台業務混合、Smurfing\n\n2️⃣ Layering（分層）\n透過複雜交易掩蓋資金來源，切斷犯罪所得與犯罪活動的聯繫。\n常見手法：跨境電匯、買賣資產、加密貨幣兌換\n\n3️⃣ Integration（整合）\n使洗白的資金以合法面貌回歸經濟體系。\n常見手法：購買不動產、投資合法企業、Loan-Back Scheme\n\n🎯 CAMS 考點：辨識情境屬於哪個階段 + 具體手法是高頻考題。"},
   {term:"Structuring / Smurfing",en:"Structuring / Smurfing",topic:"stage",
    desc:"Structuring 是刻意將交易拆分低於申報門檻；Smurfing 是組織多人分別進行 Structuring 的組織化形式。",
-   detail:"Structuring（結構化）：
-• 定義：刻意將大額交易拆分低於 CTR 門檻（$10,000）
-• 法律：BSA 下的聯邦犯罪（31 USC § 5324）
-• 關鍵：即使資金合法，有規避意圖就違法
-
-Smurfing（藍精靈操作）：
-• 定義：犯罪組織招募多名「藍精靈」在不同地點存款
-• 特點：分散執行，更難追蹤
-• 紅旗：多名不同身份的人在同一天大量小額存款
-
-🎯 CAMS 考點：「有意圖規避申報 = 違法」即使資金合法。"},
+   detail:"Structuring（結構化）：\n• 定義：刻意將大額交易拆分低於 CTR 門檻（$10,000）\n• 法律：BSA 下的聯邦犯罪（31 USC § 5324）\n• 關鍵：即使資金合法，有規避意圖就違法\n\nSmurfing（藍精靈操作）：\n• 定義：犯罪組織招募多名「藍精靈」在不同地點存款\n• 特點：分散執行，更難追蹤\n• 紅旗：多名不同身份的人在同一天大量小額存款\n\n🎯 CAMS 考點：「有意圖規避申報 = 違法」即使資金合法。"},
   {term:"TBML（貿易型洗錢）",en:"Trade-Based Money Laundering (TBML)",topic:"stage",
    desc:"透過操縱國際貿易交易（如虛報發票金額）來轉移非法資金的洗錢手法。",
-   detail:"TBML 四種主要手法：
-• Over-invoicing（高開票）：虛報高價，轉移差額資金
-• Under-invoicing（低開票）：虛報低價，接收方得到額外資金
-• Multiple invoicing（重複開票）：同一批貨物開多張發票
-• Falsely described goods（虛報貨物）：貨物說明與實際不符
-
-紅旗指標：
-✓ 發票金額與市場價格差異顯著（如40%以上）
-✓ 異常的貿易路線
-✓ 貿易量與業務規模不符
-✓ 付款流向空殼公司
-
-🎯 CAMS 考點：TBML 紅旗指標辨識是高頻情境題。"},
+   detail:"TBML 四種主要手法：\n• Over-invoicing（高開票）：虛報高價，轉移差額資金\n• Under-invoicing（低開票）：虛報低價，接收方得到額外資金\n• Multiple invoicing（重複開票）：同一批貨物開多張發票\n• Falsely described goods（虛報貨物）：貨物說明與實際不符\n\n紅旗指標：\n✓ 發票金額與市場價格差異顯著（如40%以上）\n✓ 異常的貿易路線\n✓ 貿易量與業務規模不符\n✓ 付款流向空殼公司\n\n🎯 CAMS 考點：TBML 紅旗指標辨識是高頻情境題。"},
   {term:"Loan-Back Scheme",en:"Loan-Back Scheme",topic:"stage",
    desc:"犯罪分子將犯罪所得存入境外，再以此為抵押取得「貸款」，將款項以合法貸款收益的形式匯回。",
-   detail:"操作流程：
-1. 將犯罪所得存入境外秘密帳戶
-2. 以此存款為抵押，從境外銀行取得「貸款」
-3. 「貸款」以合法形式匯回本國
-4. 犯罪分子可聲稱這是「貸款收入」
-5. 還款利息甚至可作稅務扣除
-
-這是 Integration（整合）階段的典型手法，同時提供洗錢和逃稅的雙重利益。
-
-🎯 CAMS 考點：Loan-Back 屬於 Integration 階段，不是 Placement。"},
+   detail:"操作流程：\n1. 將犯罪所得存入境外秘密帳戶\n2. 以此存款為抵押，從境外銀行取得「貸款」\n3. 「貸款」以合法形式匯回本國\n4. 犯罪分子可聲稱這是「貸款收入」\n5. 還款利息甚至可作稅務扣除\n\n這是 Integration（整合）階段的典型手法，同時提供洗錢和逃稅的雙重利益。\n\n🎯 CAMS 考點：Loan-Back 屬於 Integration 階段，不是 Placement。"},
   {term:"Real Estate ML（不動產洗錢）",en:"Real Estate Money Laundering",topic:"stage",
    desc:"利用高端不動產作為整合階段工具：購買→持有→出售→產生看似合法的資本利得。",
-   detail:"不動產洗錢常見手法：
-• 全現金購買（避免銀行融資審查）
-• 透過空殼公司購買（隱藏 UBO）
-• 多國資金來源（Layering）
-• 自我租回（製造合法收入）
-
-FinCEN 2024年最終規則：
-要求參與全現金房產交易的相關人員（律師、產權公司等）申報 UBO 資訊，針對高端不動產洗錢問題。
-
-🎯 CAMS 考點：不動產是 Integration 最常見的工具。"},
+   detail:"不動產洗錢常見手法：\n• 全現金購買（避免銀行融資審查）\n• 透過空殼公司購買（隱藏 UBO）\n• 多國資金來源（Layering）\n• 自我租回（製造合法收入）\n\nFinCEN 2024年最終規則：\n要求參與全現金房產交易的相關人員（律師、產權公司等）申報 UBO 資訊，針對高端不動產洗錢問題。\n\n🎯 CAMS 考點：不動產是 Integration 最常見的工具。"},
   // ── Sanctions ──
   {term:"OFAC（美國海外資產控制辦公室）",en:"Office of Foreign Assets Control (OFAC)",topic:"sanc",
    desc:"美國財政部下設的制裁執法機構，維護 SDN 名單，依據「長臂管轄原則」對全球涉美交易有管轄權。",
-   detail:"OFAC 核心概念：
-
-長臂管轄原則：
-任何涉及美元清算、美國人或美國金融機構的交易，無論交易雙方在何處，OFAC 均有管轄權。
-
-SDN 名單（Specially Designated Nationals）：
-被制裁的個人、公司、政府的名單，與 SDN 有關聯的資產必須被凍結。
-
-50% 規則：
-若受制裁實體擁有某公司50%以上股份，該公司也視為受制裁，即使未明確列名。
-
-申報要求：
-確認命中後10個工作日內向 OFAC 提交報告（不是 SAR）。
-
-🎯 CAMS 考點：長臂管轄原則和50%規則是必考概念。"},
+   detail:"OFAC 核心概念：\n\n長臂管轄原則：\n任何涉及美元清算、美國人或美國金融機構的交易，無論交易雙方在何處，OFAC 均有管轄權。\n\nSDN 名單（Specially Designated Nationals）：\n被制裁的個人、公司、政府的名單，與 SDN 有關聯的資產必須被凍結。\n\n50% 規則：\n若受制裁實體擁有某公司50%以上股份，該公司也視為受制裁，即使未明確列名。\n\n申報要求：\n確認命中後10個工作日內向 OFAC 提交報告（不是 SAR）。\n\n🎯 CAMS 考點：長臂管轄原則和50%規則是必考概念。"},
   {term:"SDN 名單篩查",en:"SDN List Screening / Sanctions Screening",topic:"sanc",
    desc:"金融機構必須對客戶、交易對手和資金進行制裁名單篩查，使用模糊匹配技術處理名稱拼寫差異。",
-   detail:"篩查技術：
-• 精確匹配（Exact Match）：完全相同
-• 模糊匹配（Fuzzy Match）：設定相似度門檻（通常70-85%）
-• 為何需要模糊匹配：制裁對象名稱的音譯拼寫差異
-
-門檻設定的兩難：
-• 過低（如50%）：大量誤報，分析師疲勞
-• 過高（如95%）：真正的制裁對象因拼寫差異漏網
-
-命中後流程：
-暫停交易 → 人工複核 → 確認命中：凍結並向OFAC申報
-
-🎯 CAMS 考點：模糊命中不等於自動放行，需要人工複核。"},
+   detail:"篩查技術：\n• 精確匹配（Exact Match）：完全相同\n• 模糊匹配（Fuzzy Match）：設定相似度門檻（通常70-85%）\n• 為何需要模糊匹配：制裁對象名稱的音譯拼寫差異\n\n門檻設定的兩難：\n• 過低（如50%）：大量誤報，分析師疲勞\n• 過高（如95%）：真正的制裁對象因拼寫差異漏網\n\n命中後流程：\n暫停交易 → 人工複核 → 確認命中：凍結並向OFAC申報\n\n🎯 CAMS 考點：模糊命中不等於自動放行，需要人工複核。"},
   {term:"Secondary Sanctions（次級制裁）",en:"Secondary Sanctions",topic:"sanc",
    desc:"針對非美國實體的制裁工具：即使交易不涉及美元或美國人，只要與受制裁實體有業務往來，也可能面臨被排除在美國金融系統之外的風險。",
-   detail:"次級制裁的運作邏輯：
-• 主要制裁（Primary）：直接適用於美國人和美國實體
-• 次級制裁（Secondary）：適用於與制裁對象做生意的外國實體
-
-典型例子：CAATSA（2017年）
-對與俄羅斯、伊朗、北韓有重大交易的外國實體施加次級制裁。
-
-實際影響：
-非美國銀行若為伊朗處理交易，即使完全不涉及美元，也可能被切斷美國通訊銀行服務，等於失去美元結算能力。
-
-🎯 CAMS 考點：次級制裁使美國制裁具有全球外溢效應。"},
+   detail:"次級制裁的運作邏輯：\n• 主要制裁（Primary）：直接適用於美國人和美國實體\n• 次級制裁（Secondary）：適用於與制裁對象做生意的外國實體\n\n典型例子：CAATSA（2017年）\n對與俄羅斯、伊朗、北韓有重大交易的外國實體施加次級制裁。\n\n實際影響：\n非美國銀行若為伊朗處理交易，即使完全不涉及美元，也可能被切斷美國通訊銀行服務，等於失去美元結算能力。\n\n🎯 CAMS 考點：次級制裁使美國制裁具有全球外溢效應。"},
   {term:"Wire Stripping（電匯剝離）",en:"Wire Stripping",topic:"sanc",
    desc:"在 SWIFT 或其他電匯系統中，故意刪除或修改匯款訊息中的發起人資訊，使接收行的制裁篩查系統無法識別制裁對象。",
-   detail:"Wire Stripping 案例：
-BNP Paribas（2014年）：$89億罰款
-幫助伊朗、蘇丹等制裁對象剝離匯款訊息中的發起人資訊，使交易通過美國通訊銀行的制裁篩查。
-
-技術手法：
-• 替換發起人名稱
-• 刪除涉及制裁地區的關鍵字
-• 使用代碼或縮寫混淆真實發起人
-
-法律後果：嚴重的制裁違規行為，可能面臨鉅額罰款和刑事追訴。
-
-🎯 CAMS 考點：Wire Stripping 是制裁規避的主要手法之一。"},
+   detail:"Wire Stripping 案例：\nBNP Paribas（2014年）：$89億罰款\n幫助伊朗、蘇丹等制裁對象剝離匯款訊息中的發起人資訊，使交易通過美國通訊銀行的制裁篩查。\n\n技術手法：\n• 替換發起人名稱\n• 刪除涉及制裁地區的關鍵字\n• 使用代碼或縮寫混淆真實發起人\n\n法律後果：嚴重的制裁違規行為，可能面臨鉅額罰款和刑事追訴。\n\n🎯 CAMS 考點：Wire Stripping 是制裁規避的主要手法之一。"},
   {term:"Sanctions Evasion（制裁規避）",en:"Sanctions Evasion",topic:"sanc",
    desc:"使用各種手法繞過制裁要求，常見方式包括：前台公司、轉口貿易、Wire Stripping、加密貨幣等。",
-   detail:"常見制裁規避手法：
-
-1. 前台公司（Front Company）
-在中立國設立公司，代替制裁對象進行交易。
-
-2. 轉口貿易（Transshipment）
-貨物通過中立國轉口，掩蓋最終目的地。
-
-3. Wire Stripping
-刪除電匯中的制裁相關資訊。
-
-4. 加密貨幣
-使用混幣器或隱私幣規避追蹤。
-
-AML 分析師紅旗：
-• 貿易目的地與申報目的地不符
-• 中間商無明顯業務合理性
-• 涉及敏感商品（雙用途科技）
-
-🎯 CAMS 考點：辨識制裁規避手法的情境題。"},
+   detail:"常見制裁規避手法：\n\n1. 前台公司（Front Company）\n在中立國設立公司，代替制裁對象進行交易。\n\n2. 轉口貿易（Transshipment）\n貨物通過中立國轉口，掩蓋最終目的地。\n\n3. Wire Stripping\n刪除電匯中的制裁相關資訊。\n\n4. 加密貨幣\n使用混幣器或隱私幣規避追蹤。\n\nAML 分析師紅旗：\n• 貿易目的地與申報目的地不符\n• 中間商無明顯業務合理性\n• 涉及敏感商品（雙用途科技）\n\n🎯 CAMS 考點：辨識制裁規避手法的情境題。"},
   // ── Crypto AML ──
   {term:"Mixer / Tumbler（混幣器）",en:"Cryptocurrency Mixer / Tumbler",topic:"crypto",
    desc:"透過混合多個用戶的加密貨幣來切斷交易追蹤路徑的服務。使用混幣器是最重要的加密貨幣洗錢紅旗之一。",
-   detail:"混幣器的運作原理：
-將多個用戶的加密貨幣混合在一起，再分別送出不同地址，切斷原始錢包與目標錢包的鏈上聯繫。
-
-代表案例：
-Tornado Cash：2022年被 OFAC 制裁，是首個被制裁的去中心化協議；被 Lazarus Group（朝鮮駭客）用來洗白超過 $7 億加密資產。
-
-監管立場：
-FinCEN 和 FATF 均將使用混幣器列為重大洗錢紅旗。客戶以「隱私」為由使用混幣器不被接受作充分解釋。
-
-🎯 CAMS 考點：Tornado Cash 案例 + 混幣器 = 立即啟動 SAR 評估。"},
+   detail:"混幣器的運作原理：\n將多個用戶的加密貨幣混合在一起，再分別送出不同地址，切斷原始錢包與目標錢包的鏈上聯繫。\n\n代表案例：\nTornado Cash：2022年被 OFAC 制裁，是首個被制裁的去中心化協議；被 Lazarus Group（朝鮮駭客）用來洗白超過 $7 億加密資產。\n\n監管立場：\nFinCEN 和 FATF 均將使用混幣器列為重大洗錢紅旗。客戶以「隱私」為由使用混幣器不被接受作充分解釋。\n\n🎯 CAMS 考點：Tornado Cash 案例 + 混幣器 = 立即啟動 SAR 評估。"},
   {term:"VASP（虛擬資產服務提供商）",en:"Virtual Asset Service Provider (VASP)",topic:"crypto",
    desc:"以商業方式為他人提供虛擬資產服務的實體，受 FATF 第15條建議規範，須取得許可並履行 AML 義務。",
-   detail:"VASP 的定義（FATF）：
-以商業方式提供以下服務的實體：
-• 虛擬資產的兌換（加密↔法幣、加密↔加密）
-• 虛擬資產的轉帳
-• 虛擬資產的保管
-• 金融服務的虛擬資產相關服務
-
-不屬於 VASP：
-• 個人偶爾的加密貨幣轉帳
-
-DeFi 的爭議：
-若 DeFi 協議的開發者或治理代幣持有人有實質控制權，可能被認定為 VASP。
-
-🎯 CAMS 考點：VASP 與傳統金融機構承擔相同的 AML 義務。"},
+   detail:"VASP 的定義（FATF）：\n以商業方式提供以下服務的實體：\n• 虛擬資產的兌換（加密↔法幣、加密↔加密）\n• 虛擬資產的轉帳\n• 虛擬資產的保管\n• 金融服務的虛擬資產相關服務\n\n不屬於 VASP：\n• 個人偶爾的加密貨幣轉帳\n\nDeFi 的爭議：\n若 DeFi 協議的開發者或治理代幣持有人有實質控制權，可能被認定為 VASP。\n\n🎯 CAMS 考點：VASP 與傳統金融機構承擔相同的 AML 義務。"},
   {term:"Travel Rule（旅行規則）",en:"FATF Travel Rule / Recommendation 16",topic:"crypto",
    desc:"超過門檻的虛擬資產轉帳，VASP 必須傳遞發起人與受益人的 KYC 資訊給接收方 VASP。",
-   detail:"旅行規則要求傳遞的資訊：
-• 發起人（Originator）：姓名、帳戶/錢包地址、實體地址或身份號碼
-• 受益人（Beneficiary）：姓名、帳戶/錢包地址
-
-門檻：FATF 建議 $1,000（各司法管轄區可能不同）
-
-挑戰：
-• 非託管錢包（Unhosted Wallets）：無對應的 VASP 接收資訊
-• 跨鏈交易：不同鏈的 VASP 間資訊傳遞困難
-• 隱私幣：技術上無法追蹤
-
-🎯 CAMS 考點：旅行規則是 Crypto AML 最重要的監管要求之一。"},
+   detail:"旅行規則要求傳遞的資訊：\n• 發起人（Originator）：姓名、帳戶/錢包地址、實體地址或身份號碼\n• 受益人（Beneficiary）：姓名、帳戶/錢包地址\n\n門檻：FATF 建議 $1,000（各司法管轄區可能不同）\n\n挑戰：\n• 非託管錢包（Unhosted Wallets）：無對應的 VASP 接收資訊\n• 跨鏈交易：不同鏈的 VASP 間資訊傳遞困難\n• 隱私幣：技術上無法追蹤\n\n🎯 CAMS 考點：旅行規則是 Crypto AML 最重要的監管要求之一。"},
   {term:"Blockchain Analytics（區塊鏈分析）",en:"Blockchain Analytics / Forensics",topic:"crypto",
    desc:"透過分析公開的區塊鏈交易記錄來追蹤資金流向、識別可疑錢包和評估風險的技術。主要工具：Chainalysis、Elliptic。",
-   detail:"區塊鏈分析的核心能力：
-• 追蹤資金流向（Funds Tracing）
-• 識別已知可疑地址（如暗網市場、混幣器）
-• 計算風險分數（Risk Scoring）
-• 評估直接/間接曝露（Direct/Indirect Exposure）
-
-重要概念：
-• Direct Exposure（直接曝露）：錢包直接與可疑地址交互
-• Second-Hop Exposure（第二跳曝露）：透過中間錢包間接交互
-• 50% 規則：OFAC 的50%所有權規則也適用於加密地址
-
-🎯 CAMS 考點：間接曝露需要評估重要性，不可自動放行或自動封鎖。"},
+   detail:"區塊鏈分析的核心能力：\n• 追蹤資金流向（Funds Tracing）\n• 識別已知可疑地址（如暗網市場、混幣器）\n• 計算風險分數（Risk Scoring）\n• 評估直接/間接曝露（Direct/Indirect Exposure）\n\n重要概念：\n• Direct Exposure（直接曝露）：錢包直接與可疑地址交互\n• Second-Hop Exposure（第二跳曝露）：透過中間錢包間接交互\n• 50% 規則：OFAC 的50%所有權規則也適用於加密地址\n\n🎯 CAMS 考點：間接曝露需要評估重要性，不可自動放行或自動封鎖。"},
   {term:"Privacy Coins（隱私幣）",en:"Privacy Coins (Monero, Zcash)",topic:"crypto",
    desc:"使用加密技術（如環形簽名、零知識證明）使交易完全不可追蹤的加密貨幣。主要代表：Monero（XMR）、Zcash（ZEC）。",
-   detail:"隱私幣的技術特點：
-• Monero（XMR）：環形簽名 + 隱身地址，發送方、接收方、金額均不可見
-• Zcash（ZEC）：零知識證明（zk-SNARKs），可選擇性透明
-
-AML 影響：
-• 區塊鏈分析工具完全失效
-• 違反 VASP 必須能追蹤交易來源的要求
-• 多國監管機構要求 VASP 下架隱私幣
-
-交易所下架趨勢：
-Binance、Kraken 等主流交易所已陸續下架 XMR。
-
-🎯 CAMS 考點：隱私幣下架的 AML 原因：技術上無法履行追蹤義務。"},
+   detail:"隱私幣的技術特點：\n• Monero（XMR）：環形簽名 + 隱身地址，發送方、接收方、金額均不可見\n• Zcash（ZEC）：零知識證明（zk-SNARKs），可選擇性透明\n\nAML 影響：\n• 區塊鏈分析工具完全失效\n• 違反 VASP 必須能追蹤交易來源的要求\n• 多國監管機構要求 VASP 下架隱私幣\n\n交易所下架趨勢：\nBinance、Kraken 等主流交易所已陸續下架 XMR。\n\n🎯 CAMS 考點：隱私幣下架的 AML 原因：技術上無法履行追蹤義務。"},
   {term:"DeFi AML 風險",en:"DeFi AML Risks",topic:"crypto",
    desc:"去中心化金融協議因缺乏中央控制主體，帶來嚴重的 AML 合規挑戰，主要包括：無 KYC、匿名交易、資金追蹤困難。",
-   detail:"DeFi 的主要 AML 風險：
-
-1. 無 KYC 要求
-任何人都可以使用，無法識別交易對手身份。
-
-2. 跨鏈橋（Cross-Chain Bridge）
-資金在多條鏈之間流轉，切斷區塊鏈分析的追蹤路徑。
-
-3. 治理問題
-若治理代幣持有人添加匿名功能，直接破壞 AML 體系。
-
-FATF 立場：
-若 DeFi 協議的開發者或治理者有實質控制，應被認定為 VASP 並承擔 AML 義務。
-
-🎯 CAMS 考點：DeFi + 跨鏈橋 = Layering 的高風險組合。"},
+   detail:"DeFi 的主要 AML 風險：\n\n1. 無 KYC 要求\n任何人都可以使用，無法識別交易對手身份。\n\n2. 跨鏈橋（Cross-Chain Bridge）\n資金在多條鏈之間流轉，切斷區塊鏈分析的追蹤路徑。\n\n3. 治理問題\n若治理代幣持有人添加匿名功能，直接破壞 AML 體系。\n\nFATF 立場：\n若 DeFi 協議的開發者或治理者有實質控制，應被認定為 VASP 並承擔 AML 義務。\n\n🎯 CAMS 考點：DeFi + 跨鏈橋 = Layering 的高風險組合。"},
   {term:"NFT 洗錢",en:"NFT Money Laundering / Wash Trading",topic:"crypto",
    desc:"透過 NFT 的自我買賣（Wash Trading）人為抬高價格，將非法加密貨幣轉化為看似合法的藝術品銷售收益。",
-   detail:"NFT 洗售交易（Wash Trading）流程：
-1. 犯罪分子控制兩個不同錢包（但屬同一人）
-2. 以人為高價（如 $50,000 → $500,000）將 NFT 「賣給自己」
-3. 非法加密貨幣被「洗白」為 NFT 銷售收益
-4. NFT 平台通常無嚴格 KYC，使追蹤更難
-
-FinCEN/FATF 立場：
-NFT 相關活動已被納入 VASP 監管評估範疇。
-
-AML 紅旗：
-• 同一地址短期內買賣同一 NFT 多次
-• 與市場價格嚴重不符的 NFT 交易
-
-🎯 CAMS 考點：NFT Wash Trading 屬於 Layering 階段。"},
+   detail:"NFT 洗售交易（Wash Trading）流程：\n1. 犯罪分子控制兩個不同錢包（但屬同一人）\n2. 以人為高價（如 $50,000 → $500,000）將 NFT 「賣給自己」\n3. 非法加密貨幣被「洗白」為 NFT 銷售收益\n4. NFT 平台通常無嚴格 KYC，使追蹤更難\n\nFinCEN/FATF 立場：\nNFT 相關活動已被納入 VASP 監管評估範疇。\n\nAML 紅旗：\n• 同一地址短期內買賣同一 NFT 多次\n• 與市場價格嚴重不符的 NFT 交易\n\n🎯 CAMS 考點：NFT Wash Trading 屬於 Layering 階段。"},
   // ── RBA ──
   {term:"RBA（風險基礎方法）",en:"Risk-Based Approach (RBA)",topic:"rba",
    desc:"將有限的合規資源集中於高風險領域的 AML 核心方法論。高風險客戶需 EDD，低風險可 SDD，但不能完全豁免 CDD。",
-   detail:"RBA 的核心邏輯：
-• 不是所有客戶都帶來相同的洗錢風險
-• 資源有限，應聚焦在高風險領域
-• 「一刀切」是 RBA 要取代的舊思維
-
-RBA 的層次：
-低風險 → SDD
-中等風險 → Standard CDD
-高風險 → EDD
-
-適用範圍（FATF 第22條）：
-不僅適用於銀行，DNFBP（律師、會計師、房仲等）同樣須適用 RBA。
-
-🎯 CAMS 考點：RBA 要求定期複核風險評級，「不變應萬變」是違規。"},
+   detail:"RBA 的核心邏輯：\n• 不是所有客戶都帶來相同的洗錢風險\n• 資源有限，應聚焦在高風險領域\n• 「一刀切」是 RBA 要取代的舊思維\n\nRBA 的層次：\n低風險 → SDD\n中等風險 → Standard CDD\n高風險 → EDD\n\n適用範圍（FATF 第22條）：\n不僅適用於銀行，DNFBP（律師、會計師、房仲等）同樣須適用 RBA。\n\n🎯 CAMS 考點：RBA 要求定期複核風險評級，「不變應萬變」是違規。"},
   {term:"Risk Appetite（風險承受度）",en:"Risk Appetite Statement",topic:"rba",
    desc:"機構願意接受的最高洗錢/資恐風險水準聲明，必須由董事會批准，是 AML 框架的核心文件。",
-   detail:"風險承受度聲明的重要性：
-• 定義機構的 AML 風險邊界
-• 指導具體的 AML 政策制定
-• 監管機構在檢查時重點審查
-
-必須由誰批准：董事會（Board of Directors）或最高管理委員會
-
-與 AML 框架的關係：
-風險承受度 → AML 政策 → AML 程序 → 具體控制措施 → 定期測試
-
-🎯 CAMS 考點：風險承受度必須由董事會批准，不是合規部門。"},
+   detail:"風險承受度聲明的重要性：\n• 定義機構的 AML 風險邊界\n• 指導具體的 AML 政策制定\n• 監管機構在檢查時重點審查\n\n必須由誰批准：董事會（Board of Directors）或最高管理委員會\n\n與 AML 框架的關係：\n風險承受度 → AML 政策 → AML 程序 → 具體控制措施 → 定期測試\n\n🎯 CAMS 考點：風險承受度必須由董事會批准，不是合規部門。"},
   {term:"Inherent vs Residual Risk",en:"Inherent Risk vs Residual Risk",topic:"rba",
    desc:"Inherent Risk（固有風險）是不考慮任何控制措施時的原始風險；Residual Risk（剩餘風險）是實施控制後的剩餘風險。",
-   detail:"計算邏輯：
-Inherent Risk（固有風險）
-- Controls（控制措施的效果）
-= Residual Risk（剩餘風險）
-
-監管機構的關注點：
-• 剩餘風險是否在機構的風險承受度範圍內
-• 控制措施是否足夠有效
-• 高固有風險領域是否有對應的強化控制
-
-實例：
-• 高固有風險：現金密集型業務（固有風險高）
-• 強化控制：每日現金報告、增強現場審查
-• 評估剩餘風險是否可接受
-
-🎯 CAMS 考點：AML 風險評估的基本架構。"},
+   detail:"計算邏輯：\nInherent Risk（固有風險）\n- Controls（控制措施的效果）\n= Residual Risk（剩餘風險）\n\n監管機構的關注點：\n• 剩餘風險是否在機構的風險承受度範圍內\n• 控制措施是否足夠有效\n• 高固有風險領域是否有對應的強化控制\n\n實例：\n• 高固有風險：現金密集型業務（固有風險高）\n• 強化控制：每日現金報告、增強現場審查\n• 評估剩餘風險是否可接受\n\n🎯 CAMS 考點：AML 風險評估的基本架構。"},
   {term:"Three Lines of Defence",en:"Three Lines of Defence Model",topic:"rba",
    desc:"AML 治理的三道防線：第一道（業務部門）、第二道（合規/AML 部門）、第三道（內部審計）。",
-   detail:"三道防線詳解：
-
-第一道防線（Business Units）：
-• 前線員工和業務部門
-• 日常工作中識別和管理 AML 風險
-• 負責實際執行 KYC、交易監控
-
-第二道防線（Compliance/AML Function）：
-• 合規部門和 AML 職能
-• 制定政策和程序
-• 監控第一道防線的有效性
-• 提供培訓和指導
-
-第三道防線（Internal Audit）：
-• 獨立評估第一、二道防線的有效性
-• 定期報告給審計委員會和董事會
-
-🎯 CAMS 考點：三道防線的各自職責和相互關係。"},
+   detail:"三道防線詳解：\n\n第一道防線（Business Units）：\n• 前線員工和業務部門\n• 日常工作中識別和管理 AML 風險\n• 負責實際執行 KYC、交易監控\n\n第二道防線（Compliance/AML Function）：\n• 合規部門和 AML 職能\n• 制定政策和程序\n• 監控第一道防線的有效性\n• 提供培訓和指導\n\n第三道防線（Internal Audit）：\n• 獨立評估第一、二道防線的有效性\n• 定期報告給審計委員會和董事會\n\n🎯 CAMS 考點：三道防線的各自職責和相互關係。"},
   {term:"DNFBP（指定非金融業及專業人士）",en:"Designated Non-Financial Businesses and Professions (DNFBP)",topic:"rba",
    desc:"FATF 規定必須遵守 AML 要求的非金融行業，包括：房地產仲介、律師、會計師、貴金屬商、信託服務商等。",
-   detail:"DNFBP 的主要類別：
-• 房地產仲介（在買賣交易中）
-• 律師、公證人（在特定業務中）
-• 會計師
-• 貴金屬和寶石交易商
-• 信託和公司服務提供商（TCSP）
-
-「守門人」（Gatekeeper）角色：
-DNFBP 是進入金融和法律體系的關鍵中間人，犯罪分子常透過他們建立匿名結構、購買不動產。
-
-律師-客戶特權的限制：
-不能成為協助洗錢的保護盾。
-
-🎯 CAMS 考點：DNFBP 是 RBA 適用範圍的重要考點。"},
+   detail:"DNFBP 的主要類別：\n• 房地產仲介（在買賣交易中）\n• 律師、公證人（在特定業務中）\n• 會計師\n• 貴金屬和寶石交易商\n• 信託和公司服務提供商（TCSP）\n\n「守門人」（Gatekeeper）角色：\nDNFBP 是進入金融和法律體系的關鍵中間人，犯罪分子常透過他們建立匿名結構、購買不動產。\n\n律師-客戶特權的限制：\n不能成為協助洗錢的保護盾。\n\n🎯 CAMS 考點：DNFBP 是 RBA 適用範圍的重要考點。"},
   // ── Transaction Monitoring ──
   {term:"Transaction Monitoring（交易監控）",en:"Transaction Monitoring (TM)",topic:"txn",
    desc:"透過規則引擎或 AI 模型持續監控客戶交易行為，偵測異常並產生警示（Alert），由分析師調查後決定是否申報 SAR。",
-   detail:"TM 系統的運作流程：
-交易資料 → 規則引擎/AI 模型 → Alert 產生 → L1 分析師調查 → L2 升級審查 → SAR 決定
-
-常見偵測規則：
-• 金額門檻（Amount Thresholds）
-• 頻率異常（Frequency Anomalies）
-• 行為偏差（Behavioural Deviation）
-• 地理風險（Geographic Risk）
-
-核心挑戰：
-• False Positive（誤報）率過高 → 分析師疲勞
-• False Negative（漏報）→ 真正的洗錢被漏掉
-
-🎯 CAMS 考點：TM 的目的是輔助決策，不是替代人工判斷。"},
+   detail:"TM 系統的運作流程：\n交易資料 → 規則引擎/AI 模型 → Alert 產生 → L1 分析師調查 → L2 升級審查 → SAR 決定\n\n常見偵測規則：\n• 金額門檻（Amount Thresholds）\n• 頻率異常（Frequency Anomalies）\n• 行為偏差（Behavioural Deviation）\n• 地理風險（Geographic Risk）\n\n核心挑戰：\n• False Positive（誤報）率過高 → 分析師疲勞\n• False Negative（漏報）→ 真正的洗錢被漏掉\n\n🎯 CAMS 考點：TM 的目的是輔助決策，不是替代人工判斷。"},
   {term:"Red Flags（紅旗指標）",en:"AML Red Flags",topic:"txn",
    desc:"可能指示洗錢或金融犯罪活動的警告信號，幫助合規人員識別可疑活動。",
-   detail:"常見 AML 紅旗指標：
-
-帳戶行為類：
-• 到賬即轉出（In-and-Out Pattern）
-• 與業務性質不符的大額交易
-• 整數金額（Round Dollar Amounts）
-• 刻意低於申報門檻的交易
-
-KYC 類：
-• 不願提供身份資訊
-• 複雜的公司所有權結構
-• 來自高風險地區
-
-Crypto 類：
-• 混幣器交互記錄
-• 隱私幣使用
-• 與暗網市場有關聯的錢包
-
-🎯 CAMS 考點：多個紅旗指標疊加時，可疑程度顯著增加。"},
+   detail:"常見 AML 紅旗指標：\n\n帳戶行為類：\n• 到賬即轉出（In-and-Out Pattern）\n• 與業務性質不符的大額交易\n• 整數金額（Round Dollar Amounts）\n• 刻意低於申報門檻的交易\n\nKYC 類：\n• 不願提供身份資訊\n• 複雜的公司所有權結構\n• 來自高風險地區\n\nCrypto 類：\n• 混幣器交互記錄\n• 隱私幣使用\n• 與暗網市場有關聯的錢包\n\n🎯 CAMS 考點：多個紅旗指標疊加時，可疑程度顯著增加。"},
   {term:"Money Mule（資金騾子）",en:"Money Mule",topic:"txn",
    desc:"帳戶被用作犯罪資金中轉站的個人，通常是被欺騙或被收買的無辜第三方。典型模式：收款→立即轉出→保留小額佣金。",
-   detail:"資金騾子的常見招募手法：
-• 「在家工作」詐騙兼職廣告
-• 網路交友後被要求接收和轉帳
-• 提供「工資代付」服務
-• 加密貨幣投資詐騙
-
-AML 識別特徵：
-✓ 帳戶收款後立即全額或大部分轉出
-✓ 保留小額「佣金」（通常3-10%）
-✓ 每週重複發生
-✓ 收款來源和轉帳目的地不斷更換
-
-即使本人不知情，仍是洗錢行為，機構應申報 SAR。
-
-🎯 CAMS 考點：資金騾子即使不知情，其帳戶仍在 Layering，需申報 SAR。"},
+   detail:"資金騾子的常見招募手法：\n• 「在家工作」詐騙兼職廣告\n• 網路交友後被要求接收和轉帳\n• 提供「工資代付」服務\n• 加密貨幣投資詐騙\n\nAML 識別特徵：\n✓ 帳戶收款後立即全額或大部分轉出\n✓ 保留小額「佣金」（通常3-10%）\n✓ 每週重複發生\n✓ 收款來源和轉帳目的地不斷更換\n\n即使本人不知情，仍是洗錢行為，機構應申報 SAR。\n\n🎯 CAMS 考點：資金騾子即使不知情，其帳戶仍在 Layering，需申報 SAR。"},
   {term:"Hawala（地下匯款）",en:"Hawala / Informal Value Transfer System (IVTS)",topic:"txn",
    desc:"基於信任網絡的非正式價值轉移系統，不通過正規銀行渠道，而是通過 Hawala 經紀人網絡完成資金轉移。",
-   detail:"Hawala 的運作方式：
-1. 發送方給 A 地的 Hawala 經紀人現金
-2. 經紀人通過電話通知 B 地的對應經紀人
-3. B 地經紀人向受益人支付等額資金
-4. 兩地經紀人通過清算記錄定期結算
-
-AML 風險：
-• 沒有正式匯款記錄
-• 可能用於規避制裁
-• 大規模的 Hawala 網絡可服務洗錢
-
-FinCEN 要求：
-所有 Hawala 經紀人必須作為 MSB（貨幣服務機構）登記並履行 AML 義務。
-
-🎯 CAMS 考點：Hawala 本身不一定違法，但未登記的 Hawala 是嚴重違規。"},
+   detail:"Hawala 的運作方式：\n1. 發送方給 A 地的 Hawala 經紀人現金\n2. 經紀人通過電話通知 B 地的對應經紀人\n3. B 地經紀人向受益人支付等額資金\n4. 兩地經紀人通過清算記錄定期結算\n\nAML 風險：\n• 沒有正式匯款記錄\n• 可能用於規避制裁\n• 大規模的 Hawala 網絡可服務洗錢\n\nFinCEN 要求：\n所有 Hawala 經紀人必須作為 MSB（貨幣服務機構）登記並履行 AML 義務。\n\n🎯 CAMS 考點：Hawala 本身不一定違法，但未登記的 Hawala 是嚴重違規。"},
   {term:"Account Takeover（帳戶接管）",en:"Account Takeover (ATO)",topic:"txn",
    desc:"犯罪分子入侵合法帳戶，將其用作資金騾子帳戶中轉非法資金，是欺詐與洗錢的交叉點。",
-   detail:"ATO 的識別特徵：
-• 來自新設備或新 IP 地址的登錄嘗試
-• 快速更改帳戶資訊（密碼、電話、郵件）
-• 登錄後立即發起異常金額轉帳
-• 目的地是新的或境外帳戶
-
-交叉風險：
-• 欺詐風險（Fraud Risk）
-• AML 風險（Money Mule / Layering）
-
-申報義務：
-• 提交欺詐報告
-• 同時提交 SAR（因為帳戶被用於洗錢）
-
-🎯 CAMS 考點：ATO 同時觸發欺詐調查和 SAR 申報義務."}
+   detail:"ATO 的識別特徵：\n• 來自新設備或新 IP 地址的登錄嘗試\n• 快速更改帳戶資訊（密碼、電話、郵件）\n• 登錄後立即發起異常金額轉帳\n• 目的地是新的或境外帳戶\n\n交叉風險：\n• 欺詐風險（Fraud Risk）\n• AML 風險（Money Mule / Layering）\n\n申報義務：\n• 提交欺詐報告\n• 同時提交 SAR（因為帳戶被用於洗錢）\n\n🎯 CAMS 考點：ATO 同時觸發欺詐調查和 SAR 申報義務."},
   // ── Additional KYC Concepts ──
   {term:"Correspondent Banking（代理銀行）",en:"Correspondent Banking",topic:"kyc",
    desc:"一家銀行（通訊銀行）為另一家銀行（受代理銀行）提供金融服務，使後者的客戶能夠在通訊銀行所在地區進行交易。",
-   detail:"代理銀行的 AML 風險：
-
-巢狀代理銀行（Nested Correspondent Banking）：
-受代理銀行將帳戶「轉借」給其他銀行，通訊銀行完全看不見最終交易發起人。
-
-通訊銀行的義務：
-• 對受代理銀行執行 EDD（了解其客戶群、業務、AML 政策）
-• 不得為「空殼銀行」（Shell Banks）提供代理服務
-• 定期審查代理關係的風險
-
-空殼銀行（Shell Bank）：
-在某司法管轄區無實體存在、無法受有效監管的銀行，FATF 明確禁止金融機構與其建立代理關係。
-
-🎯 CAMS 考點：空殼銀行 + 巢狀代理銀行是代理銀行業務的兩大核心考點。"},
+   detail:"代理銀行的 AML 風險：\n\n巢狀代理銀行（Nested Correspondent Banking）：\n受代理銀行將帳戶「轉借」給其他銀行，通訊銀行完全看不見最終交易發起人。\n\n通訊銀行的義務：\n• 對受代理銀行執行 EDD（了解其客戶群、業務、AML 政策）\n• 不得為「空殼銀行」（Shell Banks）提供代理服務\n• 定期審查代理關係的風險\n\n空殼銀行（Shell Bank）：\n在某司法管轄區無實體存在、無法受有效監管的銀行，FATF 明確禁止金融機構與其建立代理關係。\n\n🎯 CAMS 考點：空殼銀行 + 巢狀代理銀行是代理銀行業務的兩大核心考點。"},
   {term:"Shell Bank（空殼銀行）",en:"Shell Bank",topic:"kyc",
    desc:"在某司法管轄區無實體存在且無法受有效監管的銀行。FATF 明確禁止金融機構為空殼銀行提供代理銀行服務。",
-   detail:"空殼銀行的特徵：
-• 在設立地無實體辦公場所
-• 無法受當地監管機構有效監督
-• 通常設立在離岸監管寬鬆的地區
-
-與正當離岸銀行的區別：
-合法的離岸銀行雖然在離岸地區設立，但在當地確有實體存在，受當地監管機構監督。
-
-FATF 要求：
-金融機構必須確保其代理銀行客戶不是空殼銀行，且代理銀行客戶不為空殼銀行提供服務。
-
-🎯 CAMS 考點：空殼銀行的定義和禁止原因是代理銀行部分的必考題。"},
+   detail:"空殼銀行的特徵：\n• 在設立地無實體辦公場所\n• 無法受當地監管機構有效監督\n• 通常設立在離岸監管寬鬆的地區\n\n與正當離岸銀行的區別：\n合法的離岸銀行雖然在離岸地區設立，但在當地確有實體存在，受當地監管機構監督。\n\nFATF 要求：\n金融機構必須確保其代理銀行客戶不是空殼銀行，且代理銀行客戶不為空殼銀行提供服務。\n\n🎯 CAMS 考點：空殼銀行的定義和禁止原因是代理銀行部分的必考題。"},
   {term:"Gatekeeper（守門人）",en:"Gatekeeper",topic:"kyc",
    desc:"指律師、會計師、公証人等專業人士，作為犯罪分子進入金融和法律體系的中間人，可能在不知情或知情的情況下協助洗錢。",
-   detail:"守門人的角色：
-犯罪分子透過守門人：
-• 設立空殼公司和複雜控股結構
-• 購買高端不動產
-• 開立銀行帳戶
-• 管理財富
-
-FATF 要求（第22條）：
-在以下情境下，DNFBP（守門人）必須執行 CDD 和申報可疑活動：
-• 代客戶管理資金
-• 協助購買/出售不動產
-• 設立或管理法律結構
-
-律師-客戶特權的限制：
-不能成為協助洗錢的保護盾。在許多司法管轄區，協助洗錢的法律義務凌駕於保密義務之上。
-
-🎯 CAMS 考點：守門人的 AML 義務範圍和限制。"},
+   detail:"守門人的角色：\n犯罪分子透過守門人：\n• 設立空殼公司和複雜控股結構\n• 購買高端不動產\n• 開立銀行帳戶\n• 管理財富\n\nFATF 要求（第22條）：\n在以下情境下，DNFBP（守門人）必須執行 CDD 和申報可疑活動：\n• 代客戶管理資金\n• 協助購買/出售不動產\n• 設立或管理法律結構\n\n律師-客戶特權的限制：\n不能成為協助洗錢的保護盾。在許多司法管轄區，協助洗錢的法律義務凌駕於保密義務之上。\n\n🎯 CAMS 考點：守門人的 AML 義務範圍和限制。"},
   {term:"Proliferation Financing（擴散融資）",en:"Proliferation Financing (PF)",topic:"kyc",
    desc:"為大規模殺傷性武器（WMD）的開發、取得、製造、持有或轉讓提供資金或資源的行為。FATF 2012年將其納入第一條建議。",
-   detail:"擴散融資 vs 恐怖主義融資：
-• 兩者均涉及為非法活動提供資金
-• PF 特指針對 WMD（核武、生化武器等）的融資
-• TF 泛指針對恐怖活動的融資
-
-FATF 的要求：
-FATF 第1條建議要求各國對擴散融資實施有針對性的金融制裁（TFS）。
-
-主要相關制裁：
-• 北韓的核武計劃
-• 伊朗的導彈計劃
-• UNSC 決議相關制裁
-
-🎯 CAMS 考點：PF 是 FATF 框架中相對較新的概念，近年考試頻率增加。"},
+   detail:"擴散融資 vs 恐怖主義融資：\n• 兩者均涉及為非法活動提供資金\n• PF 特指針對 WMD（核武、生化武器等）的融資\n• TF 泛指針對恐怖活動的融資\n\nFATF 的要求：\nFATF 第1條建議要求各國對擴散融資實施有針對性的金融制裁（TFS）。\n\n主要相關制裁：\n• 北韓的核武計劃\n• 伊朗的導彈計劃\n• UNSC 決議相關制裁\n\n🎯 CAMS 考點：PF 是 FATF 框架中相對較新的概念，近年考試頻率增加。"},
   {term:"De-risking（去風險化）",en:"De-risking",topic:"kyc",
    desc:"金融機構為避免 AML 合規成本，大規模終止與特定類別客戶的業務關係。監管機構認為這不是正確的風險管理方式。",
-   detail:"去風險化的原因：
-• AML 合規成本過高
-• 擔心監管罰款
-• 對特定行業/地區的風險評估過於保守
-
-常見被去風險化的群體：
-• 某些國家的匯款機構（MSB）
-• 加密貨幣業者
-• 慈善機構
-• 特定高風險國家的客戶
-
-監管機構的立場：
-• FATF、世界銀行批評去風險化
-• 指出這是「風險規避」而非「風險管理」
-• 可能將合法客戶推向更不透明的渠道
-• 要求機構採用 RBA 而非一刀切地拒絕
-
-🎯 CAMS 考點：去風險化與 RBA 的對立關係。"},
+   detail:"去風險化的原因：\n• AML 合規成本過高\n• 擔心監管罰款\n• 對特定行業/地區的風險評估過於保守\n\n常見被去風險化的群體：\n• 某些國家的匯款機構（MSB）\n• 加密貨幣業者\n• 慈善機構\n• 特定高風險國家的客戶\n\n監管機構的立場：\n• FATF、世界銀行批評去風險化\n• 指出這是「風險規避」而非「風險管理」\n• 可能將合法客戶推向更不透明的渠道\n• 要求機構採用 RBA 而非一刀切地拒絕\n\n🎯 CAMS 考點：去風險化與 RBA 的對立關係。"},
   {term:"Financial Intelligence（金融情報）",en:"Financial Intelligence / FIU",topic:"kyc",
    desc:"金融機構提交的 SAR 和其他報告所形成的情報，由金融情報機構（FIU）收集、分析，並提供給執法機關。",
-   detail:"FIU（金融情報機構）各國對應：
-• 美國：FinCEN
-• 英國：NCA（國家犯罪局）
-• 香港：JFIU（聯合財富情報組）
-• 台灣：AMLJC（反洗錢管制中心）
-• 歐盟：各國 FIU + AMLA（2026年）
-• 國際組織：Egmont Group（103個成員 FIU）
-
-FIU 的功能：
-• 接收並分析 SAR/STR
-• 識別趨勢和模式
-• 向執法機關提供情報
-• 與其他國家 FIU 交換情報
-
-🎯 CAMS 考點：各國 FIU 名稱 + Egmont Group 是常考知識點。"},
+   detail:"FIU（金融情報機構）各國對應：\n• 美國：FinCEN\n• 英國：NCA（國家犯罪局）\n• 香港：JFIU（聯合財富情報組）\n• 台灣：AMLJC（反洗錢管制中心）\n• 歐盟：各國 FIU + AMLA（2026年）\n• 國際組織：Egmont Group（103個成員 FIU）\n\nFIU 的功能：\n• 接收並分析 SAR/STR\n• 識別趨勢和模式\n• 向執法機關提供情報\n• 與其他國家 FIU 交換情報\n\n🎯 CAMS 考點：各國 FIU 名稱 + Egmont Group 是常考知識點。"},
   // ── Additional SAR Concepts ──
   {term:"STR（可疑交易申報）",en:"Suspicious Transaction Report (STR)",topic:"sar",
    desc:"SAR 的國際通用名稱，在許多非美國司法管轄區使用。功能與 SAR 相同，是金融機構向 FIU 申報可疑活動的正式文件。",
-   detail:"SAR vs STR：
-• SAR（Suspicious Activity Report）：美國用語
-• STR（Suspicious Transaction Report）：大多數其他國家用語
-• 兩者功能完全相同
-
-不同國家的申報要求：
-• 美國：SAR → FinCEN，30天
-• 英國：SAR → NCA
-• 香港：STR → JFIU，沒有固定時限但必須「盡快」
-• 台灣：疑似洗錢交易申報 → AMLJC
-
-申報保密：
-所有司法管轄區均有 Tipping Off 禁令，保護申報的保密性。
-
-🎯 CAMS 考點：考試中 SAR 和 STR 常互換使用，理解兩者相同即可。"},
+   detail:"SAR vs STR：\n• SAR（Suspicious Activity Report）：美國用語\n• STR（Suspicious Transaction Report）：大多數其他國家用語\n• 兩者功能完全相同\n\n不同國家的申報要求：\n• 美國：SAR → FinCEN，30天\n• 英國：SAR → NCA\n• 香港：STR → JFIU，沒有固定時限但必須「盡快」\n• 台灣：疑似洗錢交易申報 → AMLJC\n\n申報保密：\n所有司法管轄區均有 Tipping Off 禁令，保護申報的保密性。\n\n🎯 CAMS 考點：考試中 SAR 和 STR 常互換使用，理解兩者相同即可。"},
   {term:"Continuing Activity SAR",en:"Continuing Activity SAR / Follow-up SAR",topic:"sar",
    desc:"初次申報 SAR 後，若可疑活動持續發生，應定期申報後續 SAR（通常每90天一次）。",
-   detail:"觸發後續 SAR 的情境：
-• 初次申報後客戶繼續進行可疑活動
-• 發現與原 SAR 相關的新資訊
-• 持續的可疑交易模式
-
-申報頻率：
-通常每90天申報一次後續 SAR，直到可疑活動停止。
-
-後續 SAR 的重要性：
-• 確保執法機關掌握最新情報
-• 建立完整的案件時間線
-• 一次申報不能涵蓋後續發展
-
-🎯 CAMS 考點：初次申報後不代表義務結束，持續活動需持續申報。"},
+   detail:"觸發後續 SAR 的情境：\n• 初次申報後客戶繼續進行可疑活動\n• 發現與原 SAR 相關的新資訊\n• 持續的可疑交易模式\n\n申報頻率：\n通常每90天申報一次後續 SAR，直到可疑活動停止。\n\n後續 SAR 的重要性：\n• 確保執法機關掌握最新情報\n• 建立完整的案件時間線\n• 一次申報不能涵蓋後續發展\n\n🎯 CAMS 考點：初次申報後不代表義務結束，持續活動需持續申報。"},
   {term:"Voluntary Disclosure to OFAC",en:"Voluntary Self-Disclosure (VSD) to OFAC",topic:"sar",
    desc:"金融機構在發現制裁違規後，主動向 OFAC 披露違規情況。VSD 通常可獲得50%的罰款減免。",
-   detail:"VSD 的優點：
-• 通常獲得50%罰款減免
-• 展示機構的合規誠意
-• 在 OFAC 調查中爭取有利立場
-
-VSD 的流程：
-1. 立即停止相關交易
-2. 進行全面內部調查
-3. 保存所有相關證據
-4. 向 OFAC 提交 VSD 報告
-5. 配合 OFAC 的後續調查
-
-注意事項：
-• VSD 不保證免罰
-• 機構必須能展示有完善的合規計劃
-• 試圖掩蓋通常導致更嚴重後果
-
-🎯 CAMS 考點：VSD 的50%減免效果和適用條件。"},
+   detail:"VSD 的優點：\n• 通常獲得50%罰款減免\n• 展示機構的合規誠意\n• 在 OFAC 調查中爭取有利立場\n\nVSD 的流程：\n1. 立即停止相關交易\n2. 進行全面內部調查\n3. 保存所有相關證據\n4. 向 OFAC 提交 VSD 報告\n5. 配合 OFAC 的後續調查\n\n注意事項：\n• VSD 不保證免罰\n• 機構必須能展示有完善的合規計劃\n• 試圖掩蓋通常導致更嚴重後果\n\n🎯 CAMS 考點：VSD 的50%減免效果和適用條件。"},
   {term:"SAR Filing Decision Process",en:"SAR Decision-Making Process",topic:"sar",
    desc:"從識別可疑活動到決定是否申報 SAR 的標準流程：識別 → 調查 → 評估 → 決定 → 申報/記錄。",
-   detail:"SAR 決策流程：
-
-1. 識別（Detection）
-交易監控系統、員工舉報、例行 CDD 複核
-
-2. 調查（Investigation）
-• 複核客戶 CDD 資料
-• 查閱帳戶歷史
-• 諮詢關係經理
-• 核實客戶解釋的合理性
-
-3. 評估（Evaluation）
-根據調查結果，評估活動是否符合申報標準
-
-4. 決定（Decision）
-• 申報 SAR → 執行並保密
-• 不申報 → 必須詳細記錄不申報的理由
-
-重要原則：
-「不申報」也必須有文件記錄，以證明機構盡職評估過。
-
-🎯 CAMS 考點：不申報 SAR 也必須記錄理由，不能置之不理。"},
+   detail:"SAR 決策流程：\n\n1. 識別（Detection）\n交易監控系統、員工舉報、例行 CDD 複核\n\n2. 調查（Investigation）\n• 複核客戶 CDD 資料\n• 查閱帳戶歷史\n• 諮詢關係經理\n• 核實客戶解釋的合理性\n\n3. 評估（Evaluation）\n根據調查結果，評估活動是否符合申報標準\n\n4. 決定（Decision）\n• 申報 SAR → 執行並保密\n• 不申報 → 必須詳細記錄不申報的理由\n\n重要原則：\n「不申報」也必須有文件記錄，以證明機構盡職評估過。\n\n🎯 CAMS 考點：不申報 SAR 也必須記錄理由，不能置之不理。"},
   // ── Additional Sanctions Concepts ──
   {term:"CAATSA（通過制裁打擊美國對手法）",en:"Countering America's Adversaries Through Sanctions Act (CAATSA)",topic:"sanc",
    desc:"2017年美國國會通過的法律，對俄羅斯、伊朗和北韓施加強制制裁，並允許對與這些政權有重大交易的外國實體實施次級制裁。",
-   detail:"CAATSA 的三個主要目標：
-• 俄羅斯：針對能源、國防、情報部門
-• 伊朗：針對導彈計劃和革命衛隊相關實體
-• 北韓：針對核武和導彈計劃
-
-AML 合規影響：
-• 金融機構必須確保制裁篩查涵蓋 CAATSA 相關實體
-• 與俄羅斯能源、國防部門有重大交易的外國公司也可能面臨制裁
-• 次級制裁風險使非美國機構也需謹慎
-
-🎯 CAMS 考點：CAATSA 代表美國制裁工具的進一步強化，次級制裁範圍擴大。"},
+   detail:"CAATSA 的三個主要目標：\n• 俄羅斯：針對能源、國防、情報部門\n• 伊朗：針對導彈計劃和革命衛隊相關實體\n• 北韓：針對核武和導彈計劃\n\nAML 合規影響：\n• 金融機構必須確保制裁篩查涵蓋 CAATSA 相關實體\n• 與俄羅斯能源、國防部門有重大交易的外國公司也可能面臨制裁\n• 次級制裁風險使非美國機構也需謹慎\n\n🎯 CAMS 考點：CAATSA 代表美國制裁工具的進一步強化，次級制裁範圍擴大。"},
   {term:"Iran Sanctions（伊朗制裁）",en:"Iran Sanctions / JCPOA",topic:"sanc",
    desc:"美國對伊朗實施的全面性制裁，禁止幾乎所有與伊朗的商業交易，包括通過第三國進行的美元交易。",
-   detail:"伊朗制裁的範圍：
-• 幾乎所有與伊朗的商業交易
-• 包括通過第三國的「迂迴交易」
-• 即使不涉及美元，次級制裁也可能適用
-
-人道主義例外：
-• 食品、藥品、醫療設備通常可以通過特定許可交易
-• 需要取得 OFAC 的 General License 或 Specific License
-
-典型違規案例：
-• BNP Paribas（2014）：$89億罰款，為伊朗處理美元交易並剝離匯款資訊
-• Standard Chartered（2012）：與伊朗客戶交易
-
-🎯 CAMS 考點：伊朗制裁幾乎是全面性的，人道主義例外需特定許可。"},
+   detail:"伊朗制裁的範圍：\n• 幾乎所有與伊朗的商業交易\n• 包括通過第三國的「迂迴交易」\n• 即使不涉及美元，次級制裁也可能適用\n\n人道主義例外：\n• 食品、藥品、醫療設備通常可以通過特定許可交易\n• 需要取得 OFAC 的 General License 或 Specific License\n\n典型違規案例：\n• BNP Paribas（2014）：$89億罰款，為伊朗處理美元交易並剝離匯款資訊\n• Standard Chartered（2012）：與伊朗客戶交易\n\n🎯 CAMS 考點：伊朗制裁幾乎是全面性的，人道主義例外需特定許可。"},
   {term:"Humanitarian Exception（人道主義例外）",en:"Humanitarian Exception / OFAC Licenses",topic:"sanc",
    desc:"OFAC 對大多數制裁設有人道主義例外，允許在特定條件下向制裁國家提供食品、藥品和災難救援，需取得 OFAC 許可。",
-   detail:"OFAC 許可的兩種類型：
-
-General License（一般許可）：
-• 不需要個別申請
-• OFAC 直接在法規中授權特定類別的活動
-• 通常涵蓋人道主義援助、新聞採訪等
-
-Specific License（特定許可）：
-• 需要向 OFAC 提出申請
-• 針對特定交易或特定當事人
-• 審批時間較長
-
-金融機構的義務：
-處理此類交易時，必須確保取得相應許可文件，並在記錄中詳細說明交易性質。
-
-🎯 CAMS 考點：人道主義例外不是自動豁免，仍需取得相應許可。"},
+   detail:"OFAC 許可的兩種類型：\n\nGeneral License（一般許可）：\n• 不需要個別申請\n• OFAC 直接在法規中授權特定類別的活動\n• 通常涵蓋人道主義援助、新聞採訪等\n\nSpecific License（特定許可）：\n• 需要向 OFAC 提出申請\n• 針對特定交易或特定當事人\n• 審批時間較長\n\n金融機構的義務：\n處理此類交易時，必須確保取得相應許可文件，並在記錄中詳細說明交易性質。\n\n🎯 CAMS 考點：人道主義例外不是自動豁免，仍需取得相應許可。"},
   {term:"Blocked Assets（封鎖資產）",en:"Blocked Assets / Blocked Accounts",topic:"sanc",
    desc:"當交易被確認涉及制裁對象時，相關資金必須凍結在獨立的封鎖帳戶中，並在10個工作日內向 OFAC 申報。",
-   detail:"封鎖資產的處理規則：
-
-1. 立即凍結：不得退還、轉移或使用
-2. 開立獨立封鎖帳戶：與其他資金嚴格隔離
-3. 10個工作日內：向 OFAC 提交「封鎖資產報告」
-4. 每年申報：向 OFAC 報告封鎖帳戶餘額（每年9月30日前）
-
-常見錯誤：
-• 將封鎖資金退還給原匯款行 → 嚴重違規
-• 未在10個工作日內申報 → 違規
-
-注意：封鎖資產報告 ≠ SAR，是分別向不同機構提交的不同報告。
-
-🎯 CAMS 考點：封鎖資產不能退還，必須申報，這是最常考的制裁操作題。"},
+   detail:"封鎖資產的處理規則：\n\n1. 立即凍結：不得退還、轉移或使用\n2. 開立獨立封鎖帳戶：與其他資金嚴格隔離\n3. 10個工作日內：向 OFAC 提交「封鎖資產報告」\n4. 每年申報：向 OFAC 報告封鎖帳戶餘額（每年9月30日前）\n\n常見錯誤：\n• 將封鎖資金退還給原匯款行 → 嚴重違規\n• 未在10個工作日內申報 → 違規\n\n注意：封鎖資產報告 ≠ SAR，是分別向不同機構提交的不同報告。\n\n🎯 CAMS 考點：封鎖資產不能退還，必須申報，這是最常考的制裁操作題。"},
   {term:"North Korea Sanctions（北韓制裁）",en:"North Korea Sanctions / Lazarus Group",topic:"sanc",
    desc:"美國和聯合國對北韓實施的全面制裁，針對其核武和導彈計劃。北韓的 Lazarus Group 是全球最活躍的加密貨幣黑客組織之一。",
-   detail:"北韓制裁的範圍：
-• 幾乎所有商業交易
-• 大量個人和實體在 SDN 名單上
-• UN 安理會多個決議
-
-Lazarus Group：
-• 北韓國家支持的黑客組織
-• 已竊取超過 $30 億加密貨幣
-• 使用 Tornado Cash 等混幣器洗白資金
-• 針對加密交易所、DeFi 協議、NFT 平台
-
-對加密機構的影響：
-• 必須對涉及北韓的加密地址進行制裁篩查
-• 使用 Chainalysis 等工具識別 Lazarus 相關錢包
-
-🎯 CAMS 考點：Lazarus Group 是 Crypto AML 最重要的制裁相關案例之一。"},
+   detail:"北韓制裁的範圍：\n• 幾乎所有商業交易\n• 大量個人和實體在 SDN 名單上\n• UN 安理會多個決議\n\nLazarus Group：\n• 北韓國家支持的黑客組織\n• 已竊取超過 $30 億加密貨幣\n• 使用 Tornado Cash 等混幣器洗白資金\n• 針對加密交易所、DeFi 協議、NFT 平台\n\n對加密機構的影響：\n• 必須對涉及北韓的加密地址進行制裁篩查\n• 使用 Chainalysis 等工具識別 Lazarus 相關錢包\n\n🎯 CAMS 考點：Lazarus Group 是 Crypto AML 最重要的制裁相關案例之一。"},
   // ── Additional Crypto Concepts ──
   {term:"Unhosted Wallet（非託管錢包）",en:"Unhosted Wallet / Self-Custodied Wallet",topic:"crypto",
    desc:"個人持有私鑰、不受任何 VASP 管轄的加密貨幣錢包，無法進行 KYC，是 Crypto AML 的重要風險點。",
-   detail:"非託管錢包的 AML 風險：
-• 沒有 KYC 資訊，無法識別真實身份
-• VASP 無法對其執行交易監控
-• 旅行規則無法適用（沒有對應 VASP）
-
-FATF 的立場：
-FATF 建議對涉及非託管錢包的交易進行更嚴格審查，特別是大額交易。部分司法管轄區要求 VASP 收集非託管錢包持有人的資訊。
-
-實務處理：
-• 部分 VASP 要求客戶證明非託管錢包的所有權
-• 對大額非託管錢包入金進行 EDD
-• 監控來自非託管錢包的異常模式
-
-🎯 CAMS 考點：非託管錢包 + 大額交易 = 更嚴格的盡調要求。"},
+   detail:"非託管錢包的 AML 風險：\n• 沒有 KYC 資訊，無法識別真實身份\n• VASP 無法對其執行交易監控\n• 旅行規則無法適用（沒有對應 VASP）\n\nFATF 的立場：\nFATF 建議對涉及非託管錢包的交易進行更嚴格審查，特別是大額交易。部分司法管轄區要求 VASP 收集非託管錢包持有人的資訊。\n\n實務處理：\n• 部分 VASP 要求客戶證明非託管錢包的所有權\n• 對大額非託管錢包入金進行 EDD\n• 監控來自非託管錢包的異常模式\n\n🎯 CAMS 考點：非託管錢包 + 大額交易 = 更嚴格的盡調要求。"},
   {term:"Stablecoin AML（穩定幣 AML）",en:"Stablecoin AML Risks",topic:"crypto",
    desc:"穩定幣（如 USDT、USDC）雖然與法幣掛鈎，但仍可用於洗錢，且因流動性高而成為犯罪分子的首選資產。",
-   detail:"穩定幣的 AML 風險：
-• 高流動性：易於快速轉移大量資金
-• 全球可及：無地理限制
-• 偽造合法性：外表像法幣，但不受相同監管
-
-常見洗錢手法：
-• 非法所得 → 非託管錢包 USDT → VASP 入金 → 換法幣
-• 透過多個 DEX 兌換不同穩定幣（Layering）
-• 利用 P2P 平台出金（規避 VASP KYC）
-
-Tether（USDT）的配合：
-Tether 已多次凍結與制裁對象或犯罪活動相關的 USDT，展示了穩定幣發行商的 AML 角色。
-
-🎯 CAMS 考點：穩定幣不等於低風險，流動性高反而增加洗錢吸引力。"},
+   detail:"穩定幣的 AML 風險：\n• 高流動性：易於快速轉移大量資金\n• 全球可及：無地理限制\n• 偽造合法性：外表像法幣，但不受相同監管\n\n常見洗錢手法：\n• 非法所得 → 非託管錢包 USDT → VASP 入金 → 換法幣\n• 透過多個 DEX 兌換不同穩定幣（Layering）\n• 利用 P2P 平台出金（規避 VASP KYC）\n\nTether（USDT）的配合：\nTether 已多次凍結與制裁對象或犯罪活動相關的 USDT，展示了穩定幣發行商的 AML 角色。\n\n🎯 CAMS 考點：穩定幣不等於低風險，流動性高反而增加洗錢吸引力。"},
   {term:"Cross-Chain Bridge（跨鏈橋）",en:"Cross-Chain Bridge",topic:"crypto",
    desc:"允許在不同區塊鏈之間轉移資產的協議。因為切斷了區塊鏈分析工具的追蹤路徑，是目前 Crypto Layering 最重要的工具之一。",
-   detail:"跨鏈橋的 AML 風險：
-• 資金在不同鏈之間流轉，分析工具難以追蹤
-• 許多跨鏈橋本身無 KYC
-• 大量中間地址使資金路徑難以還原
-
-典型洗錢路徑：
-ETH鏈資金 → 橋接到 BSC → 橋接到 Polygon → 橋接到 Arbitrum → 混幣器 → 出金
-
-監管現狀：
-FATF 2021年指引提到跨鏈橋的 AML 風險，但具體監管框架仍在發展中。部分主要跨鏈橋（如 Ronin、Wormhole）曾遭 Lazarus Group 攻擊，導致數億美元損失。
-
-🎯 CAMS 考點：跨鏈橋 = Layering 的主要工具，需要增強監控。"},
+   detail:"跨鏈橋的 AML 風險：\n• 資金在不同鏈之間流轉，分析工具難以追蹤\n• 許多跨鏈橋本身無 KYC\n• 大量中間地址使資金路徑難以還原\n\n典型洗錢路徑：\nETH鏈資金 → 橋接到 BSC → 橋接到 Polygon → 橋接到 Arbitrum → 混幣器 → 出金\n\n監管現狀：\nFATF 2021年指引提到跨鏈橋的 AML 風險，但具體監管框架仍在發展中。部分主要跨鏈橋（如 Ronin、Wormhole）曾遭 Lazarus Group 攻擊，導致數億美元損失。\n\n🎯 CAMS 考點：跨鏈橋 = Layering 的主要工具，需要增強監控。"},
   {term:"Crypto Ransomware（加密貨幣勒索軟件）",en:"Ransomware / Crypto Ransom Payments",topic:"crypto",
    desc:"黑客入侵系統後要求以加密貨幣（通常是比特幣或 Monero）支付贖金的網路攻擊。相關資金流是加密貨幣 AML 的高風險領域。",
-   detail:"勒索軟件的 AML 影響：
-• 受害者被迫購買加密貨幣支付贖金
-• 黑客使用混幣器洗白加密貨幣
-• 資金最終通過 OTC 或 P2P 兌換成法幣
-
-OFAC 的立場：
-某些勒索軟件組織已被列入 SDN 名單，向其支付贖金可能違反制裁法規。
-
-機構的應對：
-• 區塊鏈分析工具識別與勒索軟件相關的錢包
-• 對來自此類錢包的資金執行 EDD
-• 視情況申報 SAR + 通知網路安全執法機關
-
-🎯 CAMS 考點：支付勒索贖金可能同時觸發制裁合規和 SAR 申報義務。"},
+   detail:"勒索軟件的 AML 影響：\n• 受害者被迫購買加密貨幣支付贖金\n• 黑客使用混幣器洗白加密貨幣\n• 資金最終通過 OTC 或 P2P 兌換成法幣\n\nOFAC 的立場：\n某些勒索軟件組織已被列入 SDN 名單，向其支付贖金可能違反制裁法規。\n\n機構的應對：\n• 區塊鏈分析工具識別與勒索軟件相關的錢包\n• 對來自此類錢包的資金執行 EDD\n• 視情況申報 SAR + 通知網路安全執法機關\n\n🎯 CAMS 考點：支付勒索贖金可能同時觸發制裁合規和 SAR 申報義務。"},
   {term:"P2P Exchange（點對點交易所）",en:"Peer-to-Peer Cryptocurrency Exchange",topic:"crypto",
    desc:"允許個人之間直接交易加密貨幣的平台，通常 KYC 要求較寬鬆，是 AML 風險的高度關注領域。",
-   detail:"P2P 交易所的 AML 風險：
-• 部分平台 KYC 要求寬鬆或無要求
-• 交易直接在個人之間進行，難以監控
-• 常被用作加密出金渠道
-
-與正規交易所的區別：
-正規 CEX：有嚴格 KYC、交易監控、旅行規則
-P2P：可能僅有基礎 KYC，實際交易對手難以識別
-
-FATF 的要求：
-若 P2P 平台提供媒合服務並收取費用，可能符合 VASP 定義，需取得許可並履行 AML 義務。
-
-🎯 CAMS 考點：P2P 平台的 VASP 地位認定和 AML 義務是新興考點。"},
+   detail:"P2P 交易所的 AML 風險：\n• 部分平台 KYC 要求寬鬆或無要求\n• 交易直接在個人之間進行，難以監控\n• 常被用作加密出金渠道\n\n與正規交易所的區別：\n正規 CEX：有嚴格 KYC、交易監控、旅行規則\nP2P：可能僅有基礎 KYC，實際交易對手難以識別\n\nFATF 的要求：\n若 P2P 平台提供媒合服務並收取費用，可能符合 VASP 定義，需取得許可並履行 AML 義務。\n\n🎯 CAMS 考點：P2P 平台的 VASP 地位認定和 AML 義務是新興考點。"},
   // ── Additional RBA/Programme Concepts ──
   {term:"AML Programme（AML 合規計劃）",en:"AML Compliance Programme",topic:"rba",
    desc:"金融機構實施的全面 AML 控制體系，美國 BSA 要求四大支柱：政策程序、合規官、培訓、獨立測試。",
-   detail:"美國 BSA 四大支柱：
-1. 政策、程序和內部控制
-   • 書面 AML 政策
-   • 客戶識別程序（CIP）
-   • 交易監控規則
-
-2. 指定 BSA/AML 合規官
-   • 足夠的資源和授權
-   • 直接向高層報告
-
-3. 持續員工培訓
-   • 前線員工：識別紅旗指標
-   • 合規人員：深度 AML 知識
-
-4. 獨立測試（第三道防線）
-   • 內部審計或外部審計師
-   • 定期評估 AML 計劃有效性
-
-FinCEN 2016年新增：第五要素 - CDD 規則（包括 UBO 識別）
-
-🎯 CAMS 考點：四大支柱的記憶和各自的具體要求。"},
+   detail:"美國 BSA 四大支柱：\n1. 政策、程序和內部控制\n   • 書面 AML 政策\n   • 客戶識別程序（CIP）\n   • 交易監控規則\n\n2. 指定 BSA/AML 合規官\n   • 足夠的資源和授權\n   • 直接向高層報告\n\n3. 持續員工培訓\n   • 前線員工：識別紅旗指標\n   • 合規人員：深度 AML 知識\n\n4. 獨立測試（第三道防線）\n   • 內部審計或外部審計師\n   • 定期評估 AML 計劃有效性\n\nFinCEN 2016年新增：第五要素 - CDD 規則（包括 UBO 識別）\n\n🎯 CAMS 考點：四大支柱的記憶和各自的具體要求。"},
   {term:"Independent Testing（獨立測試）",en:"Independent Testing / AML Audit",topic:"rba",
    desc:"由不直接參與 AML 運作的獨立方（內部審計或外部審計師）定期評估 AML 計劃有效性的程序，是 BSA 四大支柱之一。",
-   detail:"獨立測試的範圍：
-• CIP 程序的有效性
-• SAR 申報的及時性和品質
-• 交易監控規則的有效性
-• 員工培訓的完整性
-• EDD 程序的執行情況
-
-測試頻率：
-一般每年至少一次，高風險機構可能需要更頻繁。
-
-與監管檢查的區別：
-• 獨立測試：機構自行安排的內部控制
-• 監管檢查（Bank Examination）：監管機構的外部審查
-
-發現問題後：
-必須有明確的修正計劃（Remediation Plan）和時間表。
-
-🎯 CAMS 考點：獨立測試必須由「獨立」方執行，合規部門不能自己測試自己。"},
+   detail:"獨立測試的範圍：\n• CIP 程序的有效性\n• SAR 申報的及時性和品質\n• 交易監控規則的有效性\n• 員工培訓的完整性\n• EDD 程序的執行情況\n\n測試頻率：\n一般每年至少一次，高風險機構可能需要更頻繁。\n\n與監管檢查的區別：\n• 獨立測試：機構自行安排的內部控制\n• 監管檢查（Bank Examination）：監管機構的外部審查\n\n發現問題後：\n必須有明確的修正計劃（Remediation Plan）和時間表。\n\n🎯 CAMS 考點：獨立測試必須由「獨立」方執行，合規部門不能自己測試自己。"},
   {term:"AML Training（AML 培訓）",en:"AML Employee Training",topic:"rba",
    desc:"向員工提供 AML 知識和技能的定期培訓計劃，是 BSA 四大支柱之一，必須針對不同職位設計不同內容。",
-   detail:"培訓的分層設計：
-
-前線員工（Teller, Branch Staff）：
-• 識別可疑行為的紅旗指標
-• 如何處理可疑活動的內部申報
-• Tipping Off 禁令
-
-AML/合規人員：
-• 深度 AML 法規知識
-• SAR 撰寫技巧
-• 調查方法論
-
-高層管理人員：
-• AML 風險管理框架
-• 監管趨勢
-• 董事會的 AML 責任
-
-培訓的記錄：
-必須保存培訓記錄，包括出席記錄和評估結果，以備監管機構審查。
-
-🎯 CAMS 考點：培訓必須針對不同職位客製化，不能「一課培訓全員」。"},
+   detail:"培訓的分層設計：\n\n前線員工（Teller, Branch Staff）：\n• 識別可疑行為的紅旗指標\n• 如何處理可疑活動的內部申報\n• Tipping Off 禁令\n\nAML/合規人員：\n• 深度 AML 法規知識\n• SAR 撰寫技巧\n• 調查方法論\n\n高層管理人員：\n• AML 風險管理框架\n• 監管趨勢\n• 董事會的 AML 責任\n\n培訓的記錄：\n必須保存培訓記錄，包括出席記錄和評估結果，以備監管機構審查。\n\n🎯 CAMS 考點：培訓必須針對不同職位客製化，不能「一課培訓全員」。"},
   {term:"Egmont Group（艾格蒙特集團）",en:"Egmont Group of Financial Intelligence Units",topic:"rba",
    desc:"全球 FIU（金融情報機構）的國際合作組織，目前有超過160個成員，促進各國 FIU 之間的情報交換和合作。",
-   detail:"Egmont Group 的功能：
-• 促進各國 FIU 之間的情報交換
-• 制定 FIU 的國際標準
-• 培訓和能力建設
-• 為 FIU 的相互承認提供框架
-
-Egmont Group 的重要性：
-金融機構的 SAR 提交給本國 FIU，FIU 再透過 Egmont Group 與其他國家 FIU 分享情報，形成全球 AML 情報網絡。
-
-與 FATF 的關係：
-• FATF 制定標準
-• Egmont Group 促進情報交換
-• 兩者相輔相成，共同構成全球 AML 體系
-
-🎯 CAMS 考點：Egmont Group 是國際 AML 情報合作的重要考點。"},
+   detail:"Egmont Group 的功能：\n• 促進各國 FIU 之間的情報交換\n• 制定 FIU 的國際標準\n• 培訓和能力建設\n• 為 FIU 的相互承認提供框架\n\nEgmont Group 的重要性：\n金融機構的 SAR 提交給本國 FIU，FIU 再透過 Egmont Group 與其他國家 FIU 分享情報，形成全球 AML 情報網絡。\n\n與 FATF 的關係：\n• FATF 制定標準\n• Egmont Group 促進情報交換\n• 兩者相輔相成，共同構成全球 AML 體系\n\n🎯 CAMS 考點：Egmont Group 是國際 AML 情報合作的重要考點。"},
   {term:"Wolfsberg Group（沃爾夫斯堡集團）",en:"Wolfsberg Group",topic:"rba",
    desc:"由13家主要國際銀行組成的私營組織，發布 AML/KYC 最佳實踐指引，雖不具法律約束力，但在業界廣泛參考。",
-   detail:"Wolfsberg Group 成員：
-包括美林、花旗、德意志銀行、高盛、匯豐、JP摩根、三菱 UFJ、摩根士丹利、渣打、瑞銀、瑞信（現已與 UBS 合並）、巴克萊、法國巴黎銀行。
-
-主要發布的指引：
-• 代理銀行原則（Correspondent Banking Principles）
-• 私人銀行 AML 原則
-• 貿易融資原則
-• 支付透明度標準
-
-業界地位：
-雖無法律約束力，但 Wolfsberg 原則被監管機構視為行業最佳實踐的參考標準。
-
-🎯 CAMS 考點：Wolfsberg Group 是業界自律組織，與 FATF 的政府間性質不同。"},
+   detail:"Wolfsberg Group 成員：\n包括美林、花旗、德意志銀行、高盛、匯豐、JP摩根、三菱 UFJ、摩根士丹利、渣打、瑞銀、瑞信（現已與 UBS 合並）、巴克萊、法國巴黎銀行。\n\n主要發布的指引：\n• 代理銀行原則（Correspondent Banking Principles）\n• 私人銀行 AML 原則\n• 貿易融資原則\n• 支付透明度標準\n\n業界地位：\n雖無法律約束力，但 Wolfsberg 原則被監管機構視為行業最佳實踐的參考標準。\n\n🎯 CAMS 考點：Wolfsberg Group 是業界自律組織，與 FATF 的政府間性質不同。"},
   {term:"Model Risk Management（模型風險管理）",en:"Model Risk Management in AML",topic:"rba",
    desc:"管理 AML 決策模型（如交易監控 AI、制裁篩查）潛在錯誤的風險管理程序，包括模型驗證、後測試和持續監控。",
-   detail:"模型風險的類型：
-• 假陽性過多（False Positives）：浪費資源、分析師疲勞
-• 假陰性過多（False Negatives）：真正的洗錢被漏掉
-• 模型漂移（Model Drift）：市場行為改變，模型失效
-
-模型風險管理要求：
-1. 模型驗證（Model Validation）：由獨立方驗證模型的準確性
-2. 後測試（Back-testing）：用歷史數據測試模型
-3. 持續監控（Ongoing Monitoring）：實時追蹤模型表現
-4. 文件記錄（Documentation）：記錄模型假設和局限性
-
-監管指引：
-OCC/Fed 的 SR 11-7 指引是模型風險管理的主要監管參考。
-
-🎯 CAMS 考點：AI/ML 模型在 AML 中的使用帶來新的模型風險管理挑戰。"},
+   detail:"模型風險的類型：\n• 假陽性過多（False Positives）：浪費資源、分析師疲勞\n• 假陰性過多（False Negatives）：真正的洗錢被漏掉\n• 模型漂移（Model Drift）：市場行為改變，模型失效\n\n模型風險管理要求：\n1. 模型驗證（Model Validation）：由獨立方驗證模型的準確性\n2. 後測試（Back-testing）：用歷史數據測試模型\n3. 持續監控（Ongoing Monitoring）：實時追蹤模型表現\n4. 文件記錄（Documentation）：記錄模型假設和局限性\n\n監管指引：\nOCC/Fed 的 SR 11-7 指引是模型風險管理的主要監管參考。\n\n🎯 CAMS 考點：AI/ML 模型在 AML 中的使用帶來新的模型風險管理挑戰。"},
   // ── Additional Transaction Monitoring Concepts ──
   {term:"Alert Fatigue（警示疲勞）",en:"Alert Fatigue / False Positive Fatigue",topic:"txn",
    desc:"因大量誤報（False Positive）導致分析師對警示失去敏感性，可能造成真正的可疑活動被忽略的現象。",
-   detail:"警示疲勞的成因：
-• 規則設定過於寬泛
-• 門檻設定過低
-• 缺乏風險排序機制
-• 分析師人手不足
-
-解決方法：
-• 門檻調優（Threshold Tuning）：定期調整規則參數
-• 風險排序（Risk-Based Prioritization）：高風險警示優先處理
-• 行為分析（Behavioural Analytics）：減少基於固定門檻的誤報
-• AI/ML 輔助：自動過濾明顯的誤報
-
-行業標準：
-業界通常將誤報率控制在85-95%範圍內（即5-15%真陽性率）。更低的誤報率需要更多人工投入或更精準的模型。
-
-🎯 CAMS 考點：警示疲勞是 TM 系統最常見的挑戰之一。"},
+   detail:"警示疲勞的成因：\n• 規則設定過於寬泛\n• 門檻設定過低\n• 缺乏風險排序機制\n• 分析師人手不足\n\n解決方法：\n• 門檻調優（Threshold Tuning）：定期調整規則參數\n• 風險排序（Risk-Based Prioritization）：高風險警示優先處理\n• 行為分析（Behavioural Analytics）：減少基於固定門檻的誤報\n• AI/ML 輔助：自動過濾明顯的誤報\n\n行業標準：\n業界通常將誤報率控制在85-95%範圍內（即5-15%真陽性率）。更低的誤報率需要更多人工投入或更精準的模型。\n\n🎯 CAMS 考點：警示疲勞是 TM 系統最常見的挑戰之一。"},
   {term:"Typology（洗錢類型學）",en:"Money Laundering Typology",topic:"txn",
    desc:"對洗錢和恐怖融資手法的系統性描述和分類，幫助機構理解和識別各種犯罪模式。主要由 FATF 和各國 FIU 發布。",
-   detail:"主要的洗錢類型學：
-• Smurfing / Structuring：現金拆分
-• Trade-Based ML（TBML）：貿易型洗錢
-• Real Estate ML：不動產洗錢
-• Loan-Back Scheme：貸款回購
-• Hawala：非正式匯款
-• Casino ML：賭場洗錢
-• Shell Company ML：空殼公司洗錢
-• Crypto ML：加密貨幣洗錢
-
-類型學的用途：
-• 指導交易監控規則的設計
-• 幫助分析師識別可疑模式
-• 作為培訓材料
-
-FATF 每年發布類型學報告，是最重要的 AML 參考資料之一。
-
-🎯 CAMS 考點：類型學是 CAMS 考試的重要背景知識，了解各種手法的特徵。"},
+   detail:"主要的洗錢類型學：\n• Smurfing / Structuring：現金拆分\n• Trade-Based ML（TBML）：貿易型洗錢\n• Real Estate ML：不動產洗錢\n• Loan-Back Scheme：貸款回購\n• Hawala：非正式匯款\n• Casino ML：賭場洗錢\n• Shell Company ML：空殼公司洗錢\n• Crypto ML：加密貨幣洗錢\n\n類型學的用途：\n• 指導交易監控規則的設計\n• 幫助分析師識別可疑模式\n• 作為培訓材料\n\nFATF 每年發布類型學報告，是最重要的 AML 參考資料之一。\n\n🎯 CAMS 考點：類型學是 CAMS 考試的重要背景知識，了解各種手法的特徵。"},
   {term:"Behavioural Analytics（行為分析）",en:"Behavioural Analytics / Customer Risk Profiling",topic:"txn",
    desc:"透過分析客戶的歷史交易行為建立基準（Baseline），並識別偏離基準的異常行為，比固定門檻更精準地識別可疑活動。",
-   detail:"行為分析的核心概念：
-
-Baseline（基準）：
-客戶的正常交易模式，如每月轉帳頻率、金額範圍、常用對手方。
-
-Anomaly Detection（異常偵測）：
-當客戶行為偏離基準時觸發警示，如：
-• 平時月轉帳 $5,000，突然出現 $50,000
-• 平時不進行境外匯款，突然大量跨境轉帳
-• 平時只用 ATM，突然出現大額現金存款
-
-優點 vs 固定門檻：
-• 對客戶的具體情況更敏感
-• 誤報率更低
-• 能識別多個小紅旗的組合
-
-🎯 CAMS 考點：行為分析代表 TM 技術的發展方向，比固定門檻更符合 RBA 精神。"},
+   detail:"行為分析的核心概念：\n\nBaseline（基準）：\n客戶的正常交易模式，如每月轉帳頻率、金額範圍、常用對手方。\n\nAnomaly Detection（異常偵測）：\n當客戶行為偏離基準時觸發警示，如：\n• 平時月轉帳 $5,000，突然出現 $50,000\n• 平時不進行境外匯款，突然大量跨境轉帳\n• 平時只用 ATM，突然出現大額現金存款\n\n優點 vs 固定門檻：\n• 對客戶的具體情況更敏感\n• 誤報率更低\n• 能識別多個小紅旗的組合\n\n🎯 CAMS 考點：行為分析代表 TM 技術的發展方向，比固定門檻更符合 RBA 精神。"},
   {term:"Rapid Movement of Funds（資金快速流動）",en:"Rapid Movement of Funds / In-Out Pattern",topic:"txn",
    desc:"資金在帳戶中停留時間極短，幾乎立即轉出的模式。是 Layering 和資金騾子活動最典型的紅旗指標之一。",
-   detail:"快速資金流動的特徵：
-• 收款後立即（數小時內）全額或大部分轉出
-• 多筆收款快速集中後一次性轉出
-• 轉出目的地多樣化（分散風險）
-• 與帳戶的業務性質不符
-
-典型案例：
-企業帳戶收到 $500,000 電匯，2小時內：
-→ $200,000 轉至 A 銀行
-→ $150,000 轉至 B 銀行（海外）
-→ $130,000 轉至 C 加密交易所
-→ $20,000 留存
-
-交易監控規則：
-「資金在帳戶停留不超過X小時且轉出比例超過Y%」是標準監控規則。
-
-🎯 CAMS 考點：In-Out Pattern 是最典型的 Layering 交易監控指標。"},
+   detail:"快速資金流動的特徵：\n• 收款後立即（數小時內）全額或大部分轉出\n• 多筆收款快速集中後一次性轉出\n• 轉出目的地多樣化（分散風險）\n• 與帳戶的業務性質不符\n\n典型案例：\n企業帳戶收到 $500,000 電匯，2小時內：\n→ $200,000 轉至 A 銀行\n→ $150,000 轉至 B 銀行（海外）\n→ $130,000 轉至 C 加密交易所\n→ $20,000 留存\n\n交易監控規則：\n「資金在帳戶停留不超過X小時且轉出比例超過Y%」是標準監控規則。\n\n🎯 CAMS 考點：In-Out Pattern 是最典型的 Layering 交易監控指標。"},
   {term:"Round-Tripping（資金迴流）",en:"Round-Tripping / Carousel Transactions",topic:"txn",
    desc:"資金從一個帳戶轉出後，經過一系列中間步驟，最終回到原帳戶或同一群體控制的帳戶，製造虛假的交易記錄。",
-   detail:"Round-Tripping 的目的：
-• 製造看似正當的業務活動
-• 虛增銷售收入（洗白非法資金）
-• 規避稅務（轉移利潤）
-
-常見場景：
-• 公司 A 付款給關聯公司 B（名義上是「服務費」）
-• 公司 B 再通過不同路徑付款回給 A
-• NFT 自我買賣（Wash Trading）
-• 加密貨幣交易所的虛假刷量
-
-AML 識別方法：
-• 分析交易的最終受益方
-• 追蹤資金最終回到原始發起人的路徑
-• 識別循環支付模式
-
-🎯 CAMS 考點：Round-Tripping 在 Layering 和 Integration 階段均可能出現。"}
+   detail:"Round-Tripping 的目的：\n• 製造看似正當的業務活動\n• 虛增銷售收入（洗白非法資金）\n• 規避稅務（轉移利潤）\n\n常見場景：\n• 公司 A 付款給關聯公司 B（名義上是「服務費」）\n• 公司 B 再通過不同路徑付款回給 A\n• NFT 自我買賣（Wash Trading）\n• 加密貨幣交易所的虛假刷量\n\nAML 識別方法：\n• 分析交易的最終受益方\n• 追蹤資金最終回到原始發起人的路徑\n• 識別循環支付模式\n\n🎯 CAMS 考點：Round-Tripping 在 Layering 和 Integration 階段均可能出現。"}
 ];
 
 let currentLibFilter = 'all';
@@ -2875,8 +1939,7 @@ function renderLibrary() {
       <div class="lib-card-term">${c.term}</div>
       <div class="lib-card-en">${c.en}</div>
       <div class="lib-card-desc">${c.desc}</div>
-      <div class="lib-card-detail" id="lib-detail-${i}">${(c.detail||'').replace(/
-/g,'<br>')}</div>
+      <div class="lib-card-detail" id="lib-detail-${i}">${(c.detail||'').split('\\n').join('<br>')}</div>
       <div style="margin-top:8px;font-family:var(--mono);font-size:10px;color:var(--ink3)">點擊展開詳細說明 ↓</div>
     </div>
   `).join('');
@@ -2888,25 +1951,39 @@ function toggleLibCard(i) {
 }
 
 document.addEventListener('DOMContentLoaded',()=>{
+  // Show errors on screen for debugging
+  window.onerror = function(msg, src, line, col, err) {
+    const d = document.createElement('div');
+    d.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#c0392b;color:#fff;padding:12px 16px;z-index:99999;font-size:13px;font-family:monospace';
+    d.textContent = '❌ JS Error: ' + msg + ' (line ' + line + ')';
+    document.body.appendChild(d);
+  };
+  
+  const steps = [
+    ['initDates', ()=>initDates()],
+    ['renderConcepts', ()=>renderConcepts()],
+    ['renderNews', ()=>renderNews()],
+    ['initQuiz', ()=>initQuiz()],
+    ['renderStreak', ()=>renderStreak()],
+    ['renderLibrary', ()=>renderLibrary()],
+  ];
+  
+  for (const [name, fn] of steps) {
+    try {
+      fn();
+    } catch(e) {
+      const d = document.createElement('div');
+      d.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#c0392b;color:#fff;padding:12px 16px;z-index:99999;font-size:13px;font-family:monospace;word-break:break-all';
+      d.textContent = '❌ Error in ' + name + ': ' + e.message;
+      document.body.appendChild(d);
+      console.error(name + ' failed:', e);
+    }
+  }
+  
   try {
-    initDates();
-    renderConcepts();
-    renderNews();
-    initQuiz();
-    renderStreak();
-    renderLibrary();
     const nd=document.getElementById('news2-date');
     if(nd)nd.textContent=fmtDate(new Date());
-  } catch(e) {
-    console.error('Init error:', e);
-    // Try individual init
-    try { initDates(); } catch(e2) {}
-    try { renderConcepts(); } catch(e2) {}
-    try { renderNews(); } catch(e2) {}
-    try { initQuiz(); } catch(e2) {}
-    try { renderStreak(); } catch(e2) {}
-    try { renderLibrary(); } catch(e2) {}
-  }
+  } catch(e) {}
 
   // ── PWA: show "Add to Home Screen" tip on mobile Safari ──
   const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
