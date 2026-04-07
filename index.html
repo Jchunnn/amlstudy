@@ -8,8 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="DailyAML">
 <meta name="theme-color" content="#1a1814">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=Newsreader:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<!-- System fonts only - no external dependency -->
 <style>
 :root {
   --bg:#f7f5f0;--surface:#fff;--surface2:#f0ede6;--border:#e2ddd6;--border2:#ccc8bf;
@@ -20,9 +19,9 @@
   --red:#c0392b;--red-light:#fdecea;
   --green:#1a6b3a;--green-light:#e8f5ee;
   --purple:#5a3d9e;--purple-light:#f0ebff;
-  --mono:'JetBrains Mono',monospace;
-  --serif:'Newsreader',Georgia,serif;
-  --sans:'Syne',sans-serif;
+  --mono:'SF Mono','Fira Code','Consolas',monospace;
+  --serif:'Georgia','Times New Roman',serif;
+  --sans:-apple-system,'Segoe UI','PingFang TC','Microsoft JhengHei',sans-serif;
   --shadow:0 1px 3px rgba(0,0,0,.08),0 4px 16px rgba(0,0,0,.04);
   --shadow-h:0 2px 8px rgba(0,0,0,.12),0 8px 24px rgba(0,0,0,.06);
 }
@@ -2889,11 +2888,25 @@ function toggleLibCard(i) {
 }
 
 document.addEventListener('DOMContentLoaded',()=>{
-  initDates();renderConcepts();renderNews();initQuiz();renderStreak();
-  renderLibrary();
-  // Set news2 date
-  const nd=document.getElementById('news2-date');
-  if(nd)nd.textContent=fmtDate(new Date());
+  try {
+    initDates();
+    renderConcepts();
+    renderNews();
+    initQuiz();
+    renderStreak();
+    renderLibrary();
+    const nd=document.getElementById('news2-date');
+    if(nd)nd.textContent=fmtDate(new Date());
+  } catch(e) {
+    console.error('Init error:', e);
+    // Try individual init
+    try { initDates(); } catch(e2) {}
+    try { renderConcepts(); } catch(e2) {}
+    try { renderNews(); } catch(e2) {}
+    try { initQuiz(); } catch(e2) {}
+    try { renderStreak(); } catch(e2) {}
+    try { renderLibrary(); } catch(e2) {}
+  }
 
   // ── PWA: show "Add to Home Screen" tip on mobile Safari ──
   const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
